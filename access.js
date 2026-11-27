@@ -1,0 +1,414 @@
+import { firebaseConfig, ownerUid } from './firebase-config.js';
+
+const screen = document.querySelector('#sign-in');
+const bar = document.querySelector('#access-bar');
+const dialog = document.querySelector('#access-dialog');
+const ledger = document.querySelector('#accounts-app');
+const strings = {
+  signIn: ['Sign in', 'تسجيل الدخول'],
+  google: ['Sign in with Google', 'الدخول باستخدام Google'],
+  email: ['Email', 'البريد الإلكتروني'],
+  password: ['Password', 'كلمة المرور'],
+  forgot: ['Forgot password', 'نسيت كلمة المرور'],
+  create: ['Create account', 'إنشاء حساب'],
+  setup: ['Firebase setup is required before signing in.', 'يلزم إعداد Firebase قبل تسجيل الدخول.'],
+  loading: ['Connecting…', 'جارٍ الاتصال…'],
+  verify: ['Verify your email, then check again.', 'أكّد بريدك الإلكتروني ثم تحقق مرة أخرى.'],
+  resend: ['Resend verification email', 'إعادة إرسال رسالة التأكيد'],
+  sent: ['Verification email sent.', 'تم إرسال رسالة التأكيد.'],
+  reset: ['If this address has an account, a reset email will be sent.', 'ستصلك رسالة إعادة تعيين إذا كان لهذا البريد حساب.'],
+  enterEmail: ['Enter your email address first.', 'أدخل بريدك الإلكتروني أولًا.'],
+  check: ['Check access', 'تحقق من الصلاحية'],
+  waiting: ['Access has not been approved for this email.', 'لم تتم الموافقة على هذا البريد الإلكتروني.'],
+  grant: ['Grant access', 'منح الصلاحية'],
+  add: ['Add worker', 'إضافة عامل'],
+  users: ['Users', 'المستخدمون'],
+  logout: ['Sign out', 'تسجيل الخروج'],
+  invitee: ['Invitee’s email address', 'البريد الإلكتروني للمدعو'],
+  approved: ['After approval, the invitee can sign in using their verified email address.', 'بعد الموافقة، يمكن للمدعو تسجيل الدخول ببريده الإلكتروني المؤكد.'],
+  approve: ['Approve invitation', 'الموافقة على الدعوة'],
+  pendingList: ['Pending invitations and previous access', 'الدعوات المعلّقة والصلاحيات السابقة'],
+  verified: ['Verified users', 'المستخدمون المؤكدون'],
+  confirmed: ['An account is confirmed after signing in with a verified email address.', 'يتأكد الحساب بعد تسجيل الدخول ببريد إلكتروني مؤكد.'],
+  active: ['Active', 'نشط'],
+  pending: ['Pending', 'معلّق'],
+  revoked: ['Revoked', 'ملغى'],
+  revoke: ['Revoke access', 'إلغاء الصلاحية'],
+  close: ['Close', 'إغلاق'],
+  empty: ['No users to show.', 'لا يوجد مستخدمون للعرض.'],
+  failure: ['The request failed. Check your details and try again.', 'تعذر تنفيذ الطلب. تحقق من التفاصيل وحاول مرة أخرى.'],
+  conflict: ['Another session saved newer accounts. Your unsaved changes were not written. Reload to continue.', 'حفظت جلسة أخرى بيانات أحدث. لم تُحفظ تعديلاتك الأخيرة. أعد تحميل الصفحة للمتابعة.'],
+  saveFailed: ['Your changes could not be saved. Reconnect and retry.', 'تعذر حفظ تعديلاتك. أعد الاتصال وحاول مرة أخرى.'],
+  retry: ['Retry save', 'إعادة محاولة الحفظ'],
+  importLocal: ['Import accounts from this browser', 'استيراد الحسابات من هذا المتصفح'],
+  confirmImport: ['Import this browser’s old accounts into your restaurant?', 'هل تريد استيراد حسابات هذا المتصفح القديمة إلى مطعمك؟']
+};
+
+let arabic = localStorage.getItem('accounts-language') === 'ar';
+let authApi, dbApi, auth, db;
+let user, role, restaurant, stopLedger, importLocal;
+let stage = 'loading';
+let generation = 0;
+let message = '';
+let failure = false;
+let view;
+const t = key => strings[key][arabic ? 1 : 0];
+const $ = id => document.getElementById(id);
+const toggleLabel = () => arabic ? 'English' : 'العربية';
+const accessRef = key => dbApi.doc(db, 'access', key);
+const emailKey = email => email.trim().toLowerCase();
+const validEmail = email => email.length <= 254 && /^[^@/ ]+@[^@/ ]+\.[^@/ ]+$/.test(email);
+
+function setMessage(key, error = false) {
+  message = key;
+  failure = error;
+  const status = document.querySelector('#access-message');
+  if (status) {
+    status.textContent = key ? t(key) : '';
+    status.toggleAttribute('data-error', error);
+  }
+}
+
+function render() {
+  document.documentElement.lang = arabic ? 'ar' : 'en';
+  for (const el of [screen, bar, dialog]) el.dir = arabic ? 'rtl' : 'ltr';
+  const signedIn = stage === 'ready';
+  screen.hidden = signedIn;
+  bar.hidden = !signedIn;
+  ledger.hidden = !signedIn;
+  if (signedIn) {
+    bar.innerHTML = `<span class="dot" aria-hidden="true"></span><nav>
+      ${role !== 'worker' ? `<button class="outline" data-action="grant"><span aria-hidden="true">↗</span> ${t(role === 'owner' ? 'grant' : 'add')}</button>
+      <button class="outline" data-action="users"><span aria-hidden="true">♙</span> ${t('users')}</button>` : ''}
+      <button class="outline" data-action="logout"><span aria-hidden="true">⇥</span> ${t('logout')}</button>
+      <button class="outline" data-action="language"><span aria-hidden="true">◎</span> ${toggleLabel()}</button>
+      </nav><strong id="signed-in-name"></strong><p class="message" id="access-message" role="status"></p>
+      ${importLocal ? `<button class="outline" data-action="import">${t('importLocal')}</button>` : ''}
+      <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
+    $('signed-in-name').textContent = user.displayName || user.email;
+  } else {
+    screen.innerHTML = `<article><div class="spread"><strong class="brand">Restaurant Accounts</strong>
+      <button class="outline" data-action="language">${toggleLabel()}</button></div><h1>${t('signIn')}</h1>
+      ${['login', 'setup'].includes(stage) ? `<form id="login-form"><fieldset ${stage === 'setup' ? 'disabled' : ''}>
+        <button type="button" class="outline" data-action="google"><strong aria-hidden="true" style="color:#4285f4">G</strong> &nbsp;${t('google')}</button>
+        <label for="login-email">${t('email')}</label>
+        <input id="login-email" type="email" dir="ltr" autocomplete="email" maxlength="254" required>
+        <div class="spread"><label for="login-password">${t('password')}</label>
+        <button type="button" class="text-button" data-action="forgot">${t('forgot')}</button></div>
+        <input id="login-password" type="password" dir="ltr" autocomplete="current-password" required>
+        <div class="stack"><button type="submit" class="primary">${t('signIn')}</button>
+        <button type="submit" class="outline brand" value="create">${t('create')}</button></div>
+      </fieldset></form>` : ''}
+      ${['verify', 'waiting'].includes(stage) ? `<p>${t(stage)}</p><div class="stack">
+        <button class="primary" data-action="check">${t('check')}</button>
+        ${stage === 'verify' ? `<button class="outline" data-action="resend">${t('resend')}</button>` : ''}
+        <button class="outline" data-action="logout">${t('logout')}</button></div>` : ''}
+      <p class="message" id="access-message" role="status"></p></article>`;
+  }
+  setMessage(message, failure);
+  if (signedIn) $('retry-save').hidden = message !== 'saveFailed';
+}
+
+function setStage(next, note = '') {
+  stage = next;
+  message = note;
+  failure = false;
+  render();
+}
+
+async function connect(current) {
+  const id = ++generation;
+  stopLedger?.();
+  stopLedger = null;
+  dialog.close();
+  window.restaurantAccounts.close();
+  user = current;
+  role = restaurant = null;
+  importLocal = null;
+  if (!user) return setStage('login');
+  if (!user.emailVerified || !user.email) return setStage('verify');
+  setStage('loading', 'loading');
+  try {
+    const key = emailKey(current.email);
+    let nextRole = 'owner';
+    let nextRestaurant = key;
+    if (current.uid !== ownerUid) {
+      const ref = accessRef(key);
+      const grant = (await dbApi.getDocFromServer(ref)).data();
+      if (!grant || grant.state === 'revoked' || (grant.state === 'active' && grant.uid !== current.uid)) {
+        if (id === generation) setStage('waiting');
+        return;
+      }
+      if (grant.state === 'pending') await dbApi.updateDoc(ref, { state: 'active', uid: current.uid });
+      nextRole = grant.role;
+      nextRestaurant = grant.restaurant;
+    }
+    const ref = dbApi.doc(db, 'restaurants', nextRestaurant);
+    const snapshot = await dbApi.getDocFromServer(ref);
+    if (id !== generation) return;
+    role = nextRole;
+    restaurant = nextRestaurant;
+    openLedger(ref, snapshot, id);
+    setStage('ready');
+  } catch {
+    if (id === generation) setStage('waiting', 'failure');
+  }
+}
+
+let flushLedger;
+function openLedger(ref, snapshot, id) {
+  let stored = snapshot.data()?.ledger ?? null;
+  let next = stored;
+  let saving;
+  let conflict = false;
+  const saveChanges = async () => {
+    try {
+      while (id === generation && next !== stored) {
+        const value = next;
+        await dbApi.runTransaction(db, async tx => {
+          const existing = (await tx.get(ref)).data()?.ledger ?? null;
+          if (existing !== stored) throw new Error('ledger-changed');
+          tx.set(ref, { ledger: value });
+        });
+        stored = value;
+      }
+      if (id === generation && message === 'saveFailed') {
+        setMessage('');
+        $('retry-save').hidden = true;
+      }
+      return true;
+    } catch (error) {
+      if (id !== generation) return false;
+      conflict = error.message === 'ledger-changed';
+      setMessage(conflict ? 'conflict' : 'saveFailed', true);
+      $('retry-save').hidden = conflict;
+      return false;
+    }
+  };
+  flushLedger = () => {
+    if (id !== generation || conflict) return false;
+    saving ??= saveChanges().finally(() => { saving = null; });
+    return saving;
+  };
+  const persist = value => {
+    if (value === next) return;
+    next = value;
+    void flushLedger();
+  };
+  window.restaurantAccounts.open(stored, persist);
+  if (stored === null && role !== 'worker') {
+    const legacy = localStorage.getItem('rest_acc');
+    if (legacy) importLocal = () => {
+      if (next !== null || !window.confirm(t('confirmImport'))) return;
+      importLocal = null;
+      window.restaurantAccounts.open(legacy, persist);
+      window.restaurantAccounts.save();
+      render();
+    };
+  }
+  const unsubscribeLedger = dbApi.onSnapshot(ref, { includeMetadataChanges: true }, update => {
+    // Incorporate another session's edits only when this session has no local edits.
+    if (id !== generation || update.metadata.fromCache || update.metadata.hasPendingWrites || saving || next !== stored) return;
+    const value = update.data()?.ledger ?? null;
+    if (value === stored) return;
+    stored = next = value;
+    if (importLocal) {
+      importLocal = null;
+      render();
+    }
+    window.restaurantAccounts.open(value, persist);
+  }, error => {
+    if (id === generation && error.code === 'permission-denied') void connect(currentUser());
+  });
+  const unsubscribeGrant = role === 'owner' ? null : dbApi.onSnapshot(
+    accessRef(emailKey(user.email)), { includeMetadataChanges: true }, update => {
+      if (id !== generation || update.metadata.fromCache || update.metadata.hasPendingWrites) return;
+      const grant = update.data();
+      if (grant?.state !== 'active' || grant.uid !== user.uid) void connect(currentUser());
+    }
+  );
+  stopLedger = () => {
+    unsubscribeLedger();
+    unsubscribeGrant?.();
+  };
+}
+
+const currentUser = () => auth.currentUser;
+
+async function openDialog(kind) {
+  view = kind;
+  const isGrant = kind === 'grant';
+  dialog.innerHTML = `<h2 id="access-dialog-title">${t(isGrant && role === 'manager' ? 'add' : kind)}</h2>
+    ${isGrant ? `<form id="invite-form"><label for="invite-email"><strong>${t('invitee')}</strong></label>
+    <input id="invite-email" type="email" dir="ltr" maxlength="254" required>
+    <p>${t('approved')}</p><button class="primary" type="submit">${t('approve')}</button></form>` : ''}
+    <h3>${t(isGrant ? 'pendingList' : 'verified')}</h3><p>${t('confirmed')}</p>
+    <p class="message" id="dialog-message" role="status"></p><div id="access-list"></div>
+    <footer class="dialog-footer"><button class="outline" data-action="close">${t('close')}</button></footer>`;
+  dialog.setAttribute('aria-labelledby', 'access-dialog-title');
+  if (!dialog.open) dialog.showModal();
+  await loadUsers();
+}
+
+async function loadUsers() {
+  const list = $('access-list');
+  const status = $('dialog-message');
+  const { collection, query, where, getDocsFromServer } = dbApi;
+  const filters = [where('role', '==', role === 'owner' ? 'manager' : 'worker')];
+  if (role === 'manager') filters.push(where('restaurant', '==', restaurant));
+  try {
+    const result = await getDocsFromServer(query(collection(db, 'access'), ...filters));
+    if (!dialog.open || !list.isConnected) return;
+    list.replaceChildren();
+    for (const item of result.docs) {
+      const state = item.data().state;
+      if ((view === 'users') !== (state === 'active')) continue;
+      const row = document.createElement('div');
+      row.className = 'entry spread';
+      const details = document.createElement('div');
+      const email = document.createElement('strong');
+      email.textContent = item.id;
+      const badge = document.createElement('div');
+      badge.className = 'status ' + state;
+      badge.textContent = t(state);
+      details.append(email, document.createElement('br'), badge);
+      row.append(details);
+      if (state !== 'revoked') {
+        const button = document.createElement('button');
+        button.className = 'outline';
+        button.textContent = t('revoke');
+        button.onclick = async () => {
+          button.disabled = true;
+          try {
+            await dbApi.updateDoc(item.ref, { state: 'revoked', uid: '' });
+            await loadUsers();
+          } catch {
+            status.textContent = t('failure');
+            button.disabled = false;
+          }
+        };
+        row.append(button);
+      }
+      list.append(row);
+    }
+    if (!list.children.length) list.textContent = t('empty');
+  } catch {
+    status.textContent = t('failure');
+  }
+}
+
+document.addEventListener('submit', async event => {
+  if (!['login-form', 'invite-form'].includes(event.target.id)) return;
+  event.preventDefault();
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  try {
+    if (event.target.id === 'login-form') {
+      const email = $('login-email').value.trim();
+      const password = $('login-password').value;
+      if (button?.value === 'create') {
+        const credential = await authApi.createUserWithEmailAndPassword(auth, email, password);
+        await authApi.sendEmailVerification(credential.user);
+        setMessage('sent');
+      } else {
+        await authApi.signInWithEmailAndPassword(auth, email, password);
+      }
+      return;
+    }
+    const field = $('invite-email');
+    const key = emailKey(field.value);
+    const status = $('dialog-message');
+    status.textContent = '';
+    if (!validEmail(key) || key === emailKey(user.email)) {
+      status.textContent = t('enterEmail');
+      return;
+    }
+    const ref = accessRef(key);
+    const invite = { role: role === 'owner' ? 'manager' : 'worker', restaurant: role === 'owner' ? key : restaurant, state: 'pending', uid: '' };
+    await dbApi.setDoc(ref, invite);
+    field.value = '';
+    await loadUsers();
+  } catch {
+    if (event.target.id === 'invite-form') {
+      const status = $('dialog-message');
+      if (status) status.textContent = t('failure');
+    } else {
+      setMessage('failure', true);
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+document.addEventListener('click', async event => {
+  const button = event.target.closest('[data-action]');
+  if (!button) return;
+  try {
+    switch (button.dataset.action) {
+      case 'language': {
+        const email = $('login-email')?.value;
+        arabic = !arabic;
+        localStorage.setItem('accounts-language', arabic ? 'ar' : 'en');
+        render();
+        if (email && $('login-email')) $('login-email').value = email;
+        break;
+      }
+      case 'google': await authApi.signInWithPopup(auth, new authApi.GoogleAuthProvider()); break;
+      case 'forgot': {
+        const input = $('login-email');
+        if (!input.value || !input.checkValidity()) return setMessage('enterEmail', true);
+        await authApi.sendPasswordResetEmail(auth, input.value.trim());
+        setMessage('reset');
+        break;
+      }
+      case 'logout':
+        if (stage === 'ready' && await flushLedger?.() === false) break;
+        await authApi.signOut(auth);
+        break;
+      case 'check':
+        await authApi.reload(currentUser());
+        await currentUser().getIdToken(true);
+        await connect(currentUser());
+        break;
+      case 'resend':
+        await authApi.sendEmailVerification(currentUser());
+        setMessage('sent');
+        break;
+      case 'grant':
+      case 'users':
+        if (role === 'owner' || role === 'manager') await openDialog(button.dataset.action);
+        break;
+      case 'close': dialog.close(); break;
+      case 'retry': await flushLedger?.(); break;
+      case 'import': importLocal?.(); break;
+    }
+  } catch {
+    setMessage('failure', true);
+  }
+});
+
+const emulator = ['localhost', '127.0.0.1'].includes(location.hostname)
+  && new URLSearchParams(location.search).get('emulator') === '1';
+if (!firebaseConfig && !emulator) {
+  setStage('setup', 'setup');
+} else {
+  setStage('loading', 'loading');
+  try {
+    const sdk = 'https://www.gstatic.com/firebasejs/11.10.0/';
+    const [{ initializeApp }, authentication, firestore] = await Promise.all([
+      import(sdk + 'firebase-app.js'), import(sdk + 'firebase-auth.js'), import(sdk + 'firebase-firestore.js')
+    ]);
+    authApi = authentication;
+    dbApi = firestore;
+    const app = initializeApp(emulator ? { projectId: 'demo-restaurant-accounts', apiKey: 'demo-key' } : firebaseConfig);
+    auth = authApi.getAuth(app);
+    db = dbApi.getFirestore(app);
+    if (emulator) {
+      authApi.connectAuthEmulator(auth, 'http://' + location.hostname + ':9099');
+      dbApi.connectFirestoreEmulator(db, location.hostname, 8080);
+    }
+    authApi.onAuthStateChanged(auth, connect);
+  } catch {
+    setStage('setup', 'failure');
+  }
+}
