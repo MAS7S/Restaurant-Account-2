@@ -132,3 +132,15 @@
 .access-ui .message { margin: 8px 0 0; overflow-wrap: anywhere; }
 .access-ui .message:empty { display: none; }
 .access-ui .message[data-error] { color: #90382f; }
+
+.install-app {
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--access-border);
+  background: #fdfcf8;
+}
+.install-app summary { cursor: pointer; color: var(--access-green); font-weight: 700; }
+.install-app img { vertical-align: middle; border-radius: 5px; }
+.install-app p { margin: 8px 0; }
+.install-app .primary { width: auto; }
+@media (display-mode: standalone) { .install-app { display: none; } }
