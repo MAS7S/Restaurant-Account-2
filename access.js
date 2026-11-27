@@ -23,7 +23,7 @@ const strings = {
   waiting: ['Access has not been approved for this email.', 'لم تتم الموافقة على هذا البريد الإلكتروني.'],
   grant: ['Grant access', 'منح الصلاحية'],
   users: ['Users', 'المستخدمون'],
-  editName: ['Edit display name', 'تعديل اسم العرض'],
+  editName: ['Edit your name', 'عدّل اسمك'],
   displayName: ['Your name', 'اسمك'],
   restaurantName: ['Restaurant name', 'اسم المطعم'],
   editRestaurant: ['Edit restaurant name', 'تعديل اسم المطعم'],
@@ -111,7 +111,7 @@ function render() {
       ${role !== 'worker' ? `<button class="outline" data-action="users">${icons.users}${t('users')}</button>` : ''}
       <button class="outline" data-action="logout">${icons.logout}${t('logout')}</button>
       <button class="outline" data-action="language">${icons.language}${toggleLabel()}</button>
-      </nav><button type="button" id="signed-in-name" data-action="edit-name" title="${t('editName')}"></button><p class="message" id="access-message" role="status"></p>
+      </nav><button type="button" class="edit-profile-name" data-action="edit-name"><span id="signed-in-name"></span><span class="edit-name-label">${t('editName')}</span></button><p class="message" id="access-message" role="status"></p>
       ${importLocal ? `<button class="outline" data-action="import">${t('importLocal')}</button>` : ''}
       <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
     $('signed-in-name').textContent = profileName || user.displayName || user.email;
@@ -186,7 +186,7 @@ async function connect(current) {
     restaurant = nextRestaurant;
     openLedger(ref, snapshot, id);
     setStage('ready');
-    const needsName = profile !== null && !profileName;
+    const needsName = !profileName && (profile !== null || !current.displayName);
     const needsRestaurant = role !== 'worker' && !window.restaurantAccounts.restaurantName();
     if (needsName || needsRestaurant) openNameDialog('nameSetup', needsName, needsRestaurant);
   } catch {
@@ -388,13 +388,20 @@ document.addEventListener('submit', async event => {
         status.textContent = t('invalidName');
         return;
       }
+      if (restaurantName) window.restaurantAccounts.setRestaurantName(restaurantName);
       if (name && name !== profileName) {
-        await dbApi.setDoc(profileRef(user.uid), { name });
+        const account = user;
+        try {
+          await dbApi.setDoc(profileRef(account.uid), { name });
+        } catch (error) {
+          // Projects with older rules can still save a personal name in Firebase Auth.
+          if (error.code !== 'permission-denied' || id !== generation) throw error;
+          await authApi.updateProfile(account, { displayName: name });
+        }
         if (id !== generation) return;
         profileName = name;
         $('signed-in-name').textContent = name;
       }
-      if (restaurantName) window.restaurantAccounts.setRestaurantName(restaurantName);
       if (event.target.isConnected) dialog.close();
       return;
     }

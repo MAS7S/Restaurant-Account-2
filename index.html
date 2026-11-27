@@ -74,9 +74,9 @@ h3{margin:0 0 8px;font-size:15px}
 .week-select output{text-align:center;font-weight:700}
 .ledger-tools #nx{width:100%}
 [dir="rtl"] .dh span{margin-inline-start:6px;margin-left:0}
-.week-start-row{display:flex;align-items:stretch;gap:8px}
-.week-start-row input{flex:1;min-width:0}
-.week-start-row button{border:0;border-radius:12px;padding:8px 14px;background:#0b6145;color:white;font:inherit;font-weight:700;cursor:pointer}
+.ledger-field-row{display:flex;align-items:stretch;gap:8px}
+.ledger-field-row input{flex:1;min-width:0}
+.ledger-field-row button{border:0;border-radius:12px;padding:8px 14px;background:#0b6145;color:white;font:inherit;font-weight:700;cursor:pointer}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -88,9 +88,17 @@ h3{margin:0 0 8px;font-size:15px}
 <header class="ban"><div class="bn"><button type="button" id="bn" data-action="edit-restaurant">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
 <main>
 <section class="card">
+<form id="restaurant-title-form">
+  <label for="restaurant-title" data-i18n="Restaurant name">Restaurant name</label>
+  <div class="ledger-field-row">
+    <input id="restaurant-title" type="text" maxlength="80" required
+      placeholder="Restaurant name" data-placeholder="Restaurant name">
+    <button type="submit" data-i18n="Save">Save</button>
+  </div>
+</form>
 <form id="week-start-form">
   <label for="wk" data-i18n="Week starts">Week starts</label>
-  <div class="week-start-row">
+  <div class="ledger-field-row">
     <input id="wk" type="date" required>
     <button type="submit" data-i18n="Start week">Start week</button>
   </div>
@@ -138,7 +146,7 @@ const translations = {
   'Restaurant Accounts':'حسابات المطعم', 'Restaurant name':'اسم المطعم', 'Week starts':'بداية الأسبوع', 'Start week':'ابدأ الأسبوع',
   Currency:'العملة', 'Week total':'إجمالي الأسبوع', Done:'تم', '+ Add expense':'إضافة مصروف',
   'CASH EXPENSES':'المصروفات النقدية', 'CREDIT EXPENSES':'المصروفات الآجلة',
-  Weeks:'الأسابيع', 'Saved weeks':'الأسابيع المحفوظة', Older:'الأقدم', Newer:'الأحدث',
+  Save:'حفظ', Weeks:'الأسابيع', 'Saved weeks':'الأسابيع المحفوظة', Older:'الأقدم', Newer:'الأحدث',
   'Save week and start next':'حفظ الأسبوع وبدء التالي', Current:'الحالي',
   Reports:'التقارير', 'Save as PDF':'حفظ PDF', 'Export Excel (CSV)':'تصدير Excel ‏(CSV)',
   'Share PDF':'مشاركة PDF', Backup:'النسخ الاحتياطي', 'Export backup':'تصدير نسخة احتياطية',
@@ -278,6 +286,7 @@ const cards=t=>{
 };
 function head(){
   $('bn').textContent=S.name||L('Restaurant Accounts');
+  $('restaurant-title').value=S.name;
   $('bt').textContent=weekLabel(selectedWeek());
 }
 function totals(){
@@ -357,6 +366,13 @@ document.addEventListener('click',e=>{
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
 $('md').onclick=e=>{if(e.target===$('md'))closeM()};
+$('restaurant-title-form').onsubmit=event=>{
+  event.preventDefault();
+  const input=$('restaurant-title');
+  const name=input.value.trim();
+  if(name)window.restaurantAccounts.setRestaurantName(name);
+  input.value=S.name;
+};
 $('week-start-form').onsubmit=event=>{
   event.preventDefault();
   changeCurrentWeek($('wk').value);
