@@ -24,6 +24,9 @@ const strings = {
   grant: ['Grant access', 'منح الصلاحية'],
   add: ['Add worker', 'إضافة عامل'],
   users: ['Users', 'المستخدمون'],
+  editName: ['Edit display name', 'تعديل اسم العرض'],
+  displayName: ['Display name', 'اسم العرض'],
+  invalidName: ['Enter a name of up to 80 characters.', 'أدخل اسمًا لا يزيد عن ٨٠ حرفًا.'],
   logout: ['Sign out', 'تسجيل الخروج'],
   invitee: ['Invitee’s email address', 'البريد الإلكتروني للمدعو'],
   approved: ['After approval, the invitee can sign in using their verified email address.', 'بعد الموافقة، يمكن للمدعو تسجيل الدخول ببريده الإلكتروني المؤكد.'],
@@ -90,7 +93,8 @@ function setMessage(key, error = false) {
 }
 
 function render() {
-  document.documentElement.lang = arabic ? 'ar' : 'en';
+  const language = arabic ? 'ar' : 'en';
+  if (document.documentElement.lang !== language) document.documentElement.lang = language;
   for (const el of [screen, bar, dialog]) el.dir = arabic ? 'rtl' : 'ltr';
   const signedIn = stage === 'ready';
   screen.hidden = signedIn;
@@ -102,7 +106,7 @@ function render() {
       <button class="outline" data-action="users">${icons.users}${t('users')}</button>` : ''}
       <button class="outline" data-action="logout">${icons.logout}${t('logout')}</button>
       <button class="outline" data-action="language">${icons.language}${toggleLabel()}</button>
-      </nav><strong id="signed-in-name"></strong><p class="message" id="access-message" role="status"></p>
+      </nav><button type="button" id="signed-in-name" data-action="edit-name" title="${t('editName')}"></button><p class="message" id="access-message" role="status"></p>
       ${importLocal ? `<button class="outline" data-action="import">${t('importLocal')}</button>` : ''}
       <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
     $('signed-in-name').textContent = user.displayName || user.email;
@@ -386,6 +390,24 @@ document.addEventListener('click', async event => {
         if (!input.value || !input.checkValidity()) return setMessage('enterEmail', true);
         await authApi.sendPasswordResetEmail(auth, input.value.trim());
         setMessage('reset');
+        break;
+      }
+      case 'edit-name': {
+        const account = currentUser();
+        if (!account || stage !== 'ready') break;
+        const text = window.prompt(t('displayName'), account.displayName || '');
+        if (text === null) break;
+        const name = text.trim();
+        if (!name || name.length > 80) {
+          setMessage('invalidName', true);
+          break;
+        }
+        if (name === account.displayName) break;
+        await authApi.updateProfile(account, { displayName: name });
+        if (currentUser()?.uid === account.uid && stage === 'ready') {
+          $('signed-in-name').textContent = name;
+          setMessage('');
+        }
         break;
       }
       case 'logout':

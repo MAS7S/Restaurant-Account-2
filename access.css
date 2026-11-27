@@ -93,7 +93,19 @@
 .access-bar [data-action="users"] svg { color: #356148; }
 .access-bar [data-action="logout"] svg { color: #76513e; }
 .access-bar [data-action="language"] svg { color: #465e85; }
-#signed-in-name { display: block; margin-inline: 8px; overflow-wrap: anywhere; }
+#signed-in-name {
+  display: block;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
 
 .access-ui.dialog {
   width: min(calc(100% - 36px), 540px);
