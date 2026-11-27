@@ -19,6 +19,7 @@ const strings = {
   reset: ['If this address has an account, a reset email will be sent.', 'ستصلك رسالة إعادة تعيين إذا كان لهذا البريد حساب.'],
   enterEmail: ['Enter your email address first.', 'أدخل بريدك الإلكتروني أولًا.'],
   check: ['Check access', 'تحقق من الصلاحية'],
+  invitationRequired: ['Ask for an invitation before signing in.', 'اطلب دعوة قبل تسجيل الدخول.'],
   waiting: ['Access has not been approved for this email.', 'لم تتم الموافقة على هذا البريد الإلكتروني.'],
   grant: ['Grant access', 'منح الصلاحية'],
   add: ['Add worker', 'إضافة عامل'],
@@ -73,6 +74,10 @@ const toggleLabel = () => arabic ? 'English' : 'العربية';
 const accessRef = key => dbApi.doc(db, 'access', key);
 const emailKey = email => email.trim().toLowerCase();
 const validEmail = email => email.length <= 254 && /^[^@/ ]+@[^@/ ]+\.[^@/ ]+$/.test(email);
+
+function signInError(error) {
+  return error?.message?.includes('RESTAURANT_INVITATION_REQUIRED') ? 'invitationRequired' : 'failure';
+}
 
 function setMessage(key, error = false) {
   message = key;
@@ -350,12 +355,12 @@ document.addEventListener('submit', async event => {
     await dbApi.setDoc(ref, invite);
     field.value = '';
     await loadUsers();
-  } catch {
+  } catch (error) {
     if (event.target.id === 'invite-form') {
       const status = $('dialog-message');
       if (status) status.textContent = t('failure');
     } else {
-      setMessage('failure', true);
+      setMessage(signInError(error), true);
     }
   } finally {
     if (button) button.disabled = false;
@@ -404,8 +409,8 @@ document.addEventListener('click', async event => {
       case 'retry': await flushLedger?.(); break;
       case 'import': importLocal?.(); break;
     }
-  } catch {
-    setMessage('failure', true);
+  } catch (error) {
+    setMessage(signInError(error), true);
   }
 });
 
