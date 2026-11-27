@@ -77,6 +77,17 @@ h3{margin:0 0 8px;font-size:15px}
 .ledger-field-row{display:flex;align-items:stretch;gap:8px}
 .ledger-field-row input{flex:1;min-width:0}
 .ledger-field-row button{border:0;border-radius:12px;padding:8px 14px;background:#0b6145;color:white;font:inherit;font-weight:700;cursor:pointer}
+.salary-summary{width:100%;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:10px;padding:12px;border:1px solid #e8736f;border-radius:14px;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer;text-align:start}
+.salary-summary:hover,.salary-summary:focus-visible{background:#4a2022}
+.salary-worker{flex:1 1 100%;display:grid;gap:6px;min-width:0}
+.salary-worker details{padding:4px 0}
+.salary-worker summary{font-weight:700;cursor:pointer}
+.salary-worker form{display:flex;gap:6px;margin-top:6px}
+.salary-worker form button{flex:none;width:auto;padding-inline:10px}
+.salary-group{padding:12px 0;border-bottom:1px solid #e1e2dc}
+.salary-group ul{list-style:none;margin:7px 0 0;padding:0}
+.salary-group li{display:flex;justify-content:space-between;gap:8px;padding-block:3px;color:#496158}
+.salary-group bdi{overflow-wrap:anywhere}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -133,6 +144,14 @@ h3{margin:0 0 8px;font-size:15px}
 </section>
 </main>
 <div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button" data-i18n="Done">Done</button></div><div id="ml"></div><button class="add" id="ma" type="button" data-i18n="+ Add expense">+ Add expense</button><div class="mc"><div><span data-i18n="CASH EXPENSES">CASH EXPENSES</span><b id="mc"></b></div><div><span data-i18n="CREDIT EXPENSES">CREDIT EXPENSES</span><b id="mk"></b></div></div></div></div>
+<dialog class="access-ui dialog" id="salary-dialog" aria-labelledby="salary-title">
+  <h2 id="salary-title" data-i18n="Weekly salaries">Weekly salaries</h2>
+  <p id="salary-period"></p>
+  <div id="salary-breakdown"></div>
+  <form method="dialog" class="dialog-footer">
+    <button class="outline" type="submit" data-i18n="Close">Close</button>
+  </form>
+</dialog>
 </div>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -164,7 +183,10 @@ const translations = {
   'Cash net':'صافي النقدي', 'Credit net':'صافي الآجل', 'Daily details':'التفاصيل اليومية',
   Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
   'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
-  Report:'التقرير', 'Weekly summary':'ملخص الأسبوع', 'Expense details':'تفاصيل المصروفات',
+  'Weekly salaries':'رواتب الأسبوع', 'Worker name':'اسم العامل', 'Select worker':'اختر العامل',
+  'Add worker name':'أضف اسم عامل', 'Save worker':'حفظ الاسم',
+  'No salaries this week.':'لا توجد رواتب مسجّلة لهذا الأسبوع.',
+  'Unnamed worker':'عامل بلا اسم', Report:'التقرير', 'Weekly summary':'ملخص الأسبوع', 'Expense details':'تفاصيل المصروفات',
   Category:'الفئة', 'Payment method':'طريقة الدفع', Notes:'الملاحظات', Page:'صفحة'
 };
 const ar=()=>document.documentElement.lang==='ar';
@@ -175,14 +197,25 @@ const sd=s=>parse(s).toLocaleDateString(locale(),{month:'short',day:'numeric'});
 const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&parse(s)!==null&&iso(parse(s))===s;
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
 const fmt=n=>(Math.round(n*100)/100).toLocaleString(locale());
-const CATS=['Food & supplies','Salaries','Rent','Utilities','Maintenance','Cleaning & packaging','Other'];
+const SALARIES='Salaries';
+const CATS=['Food & supplies',SALARIES,'Rent','Utilities','Maintenance','Cleaning & packaging','Other'];
 function monday(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)}
-const emptyLedger=()=>({name:'',cur:'$',week:monday(),savedWeeks:[],days:{}});
+const emptyLedger=()=>({name:'',cur:'$',week:monday(),savedWeeks:[],workers:[],days:{}});
 let S=emptyLedger();
 let viewWeek=null;
 const selectedWeek=()=>viewWeek||S.week;
 let persistLedger=null;
 const save=()=>persistLedger?.(JSON.stringify(S));
+
+const workerName=value=>typeof value==='string'?value.trim().slice(0,80):'';
+function rememberWorker(workers,value){
+  const name=workerName(value);
+  if(!name)return '';
+  const known=workers.find(worker=>worker.toLowerCase()===name.toLowerCase());
+  if(known)return known;
+  workers.push(name);
+  return name;
+}
 
 function normalizeLedger(data){
   const ledger=emptyLedger();
@@ -191,6 +224,9 @@ function normalizeLedger(data){
   if(typeof data.cur==='string')ledger.cur=data.cur;
   if(validDate(data.week))ledger.week=data.week;
   if(Array.isArray(data.savedWeeks))ledger.savedWeeks=[...new Set(data.savedWeeks.filter(validDate))];
+  if(Array.isArray(data.workers)){
+    for(const name of data.workers)rememberWorker(ledger.workers,name);
+  }
   if(data.days&&typeof data.days==='object'){
     for(const [date, record] of Object.entries(data.days)){
       if(!validDate(date)||!record||typeof record!=='object'||Array.isArray(record))continue;
@@ -203,6 +239,7 @@ function normalizeLedger(data){
           a:typeof e.a==='string'?e.a:'',
           c:CATS.includes(e.c)?e.c:CATS[0],
           n:typeof e.n==='string'?e.n:'',
+          ...(e.c===SALARIES&&workerName(e.worker)?{worker:rememberWorker(ledger.workers,e.worker)}:{}),
           t:e.t==='credit'?'credit':'cash'
         }))
       };
@@ -238,6 +275,9 @@ window.restaurantAccounts={
     $('md').hidden=true;
     $('ml').replaceChildren();
     $('pv')?.remove();
+    $('salary-dialog').close();
+    $('salary-period').textContent='';
+    $('salary-breakdown').replaceChildren();
     S=emptyLedger();
     render();
   }
@@ -280,10 +320,39 @@ const norm=o=>{
 const day=d=>norm(S.days[d]||(S.days[d]={}));
 const tot=d=>{const o=S.days[d];if(!o)return{i:0,e:0,ci:0,cr:0,ec:0,ek:0};norm(o);const ci=num(o.cash),cr=num(o.credit),ek=sum(o.exp.filter(isCr)),e=sum(o.exp);return{i:ci+cr,e:e,ci:ci,cr:cr,ec:e-ek,ek:ek}};
 const money=n=>fmt(n)+' '+S.cur;
-const cards=t=>{
-  const b=(c,l,v,a,z)=>'<section class="sc '+c+'"><div class="l">'+L(l)+'</div><div class="v">' +esc(money(v))+'</div><div class="two"><div><span>'+L(a[0])+'</span><b>'+esc(money(a[1]))+'</b></div><div><span>'+L(z[0])+'</span><b>'+esc(money(z[1]))+'</b></div></div></section>';
-  return b('net','NET PROFIT',t.i-t.e,['CASH NET',t.ci-t.ec],['CREDIT NET',t.cr-t.ek])+b('ex','EXPENSES',t.e,['CASH',t.ec],['CREDIT',t.ek])+b('in','TOTAL INCOME',t.i,['CASH',t.ci],['CREDIT',t.cr]);
+function weeklySalaries(){
+  const groups=new Map();
+  let total=0;
+  for(const date of dates()){
+    for(const expense of S.days[date]?.exp||[]){
+      if(expense.c!==SALARIES||!num(expense.a))continue;
+      const worker=expense.worker||'';
+      const amount=num(expense.a);
+      if(!groups.has(worker))groups.set(worker,{total:0,payments:[]});
+      const group=groups.get(worker);
+      group.total+=amount;
+      group.payments.push({date,amount});
+      total+=amount;
+    }
+  }
+  return {groups,total};
+}
+const cards=(t,salaries)=>{
+  const b=(c,l,v,a,z,extra='')=>'<section class="sc '+c+'"><div class="l">'+L(l)+'</div><div class="v">'+esc(money(v))+'</div><div class="two"><div><span>'+L(a[0])+'</span><b>'+esc(money(a[1]))+'</b></div><div><span>'+L(z[0])+'</span><b>'+esc(money(z[1]))+'</b></div></div>'+extra+'</section>';
+  const salaryButton='<button type="button" class="salary-summary" id="weekly-salaries" aria-haspopup="dialog"><span>'+L(SALARIES)+'</span><bdi>'+esc(money(salaries))+'</bdi></button>';
+  return b('net','NET PROFIT',t.i-t.e,['CASH NET',t.ci-t.ec],['CREDIT NET',t.cr-t.ek])
+    +b('ex','EXPENSES',t.e,['CASH',t.ec],['CREDIT',t.ek],salaryButton)
+    +b('in','TOTAL INCOME',t.i,['CASH',t.ci],['CREDIT',t.cr]);
 };
+function showSalaryDetails({groups,total}){
+  $('salary-period').textContent=weekLabel(selectedWeek())+' · '+money(total);
+  $('salary-breakdown').innerHTML=groups.size
+    ? [...groups].map(([worker,group])=>`<section class="salary-group">
+        <div class="spread"><strong><bdi>${esc(worker||L('Unnamed worker'))}</bdi></strong><bdi>${esc(money(group.total))}</bdi></div>
+        <ul>${group.payments.map(({date,amount})=>`<li><span>${sd(date)}</span><bdi>${esc(money(amount))}</bdi></li>`).join('')}</ul>
+      </section>`).join('')
+    : '<p>'+L('No salaries this week.')+'</p>';
+}
 function head(){
   $('bn').textContent=S.name||L('Restaurant Accounts');
   $('restaurant-title').value=S.name;
@@ -292,7 +361,9 @@ function head(){
 function totals(){
   const W={i:0,e:0,ci:0,cr:0,ec:0,ek:0};
   dates().forEach(x=>{const q=tot(x);for(const k in W)W[k]+=q[k]});
-  $('wsum').innerHTML=cards(W);
+  const salaries=weeklySalaries();
+  $('wsum').innerHTML=cards(W,salaries.total);
+  if($('salary-dialog').open)showSalaryDetails(salaries);
 }
 function drawDays(){
   $('days').innerHTML=dates().map((x,i)=>{const o=S.days[x]||{},t=tot(x);
@@ -331,11 +402,54 @@ function render(){
 
 let MI=-1;
 function mtot(){const t=tot(dates()[MI]);$('mc').textContent=money(t.ec);$('mk').textContent=money(t.ek)}
+function workerPicker(expense,index){
+  const options=S.workers.map(name=>`<option value="${esc(name)}"${name===expense.worker?' selected':''}>${esc(name)}</option>`).join('');
+  return `<div class="salary-worker">
+    <label for="worker-${index}">${L('Worker name')}</label>
+    <select id="worker-${index}" data-j="${index}" data-f="worker">
+      <option value="">${L('Select worker')}</option>${options}
+    </select>
+    <details>
+      <summary>${L('Add worker name')}</summary>
+      <form data-add-worker="${index}">
+        <input name="worker" maxlength="80" required aria-label="${L('Worker name')}" placeholder="${L('Worker name')}">
+        <button class="eb" type="submit">${L('Save worker')}</button>
+      </form>
+    </details>
+  </div>`;
+}
 function drawM(){
   const o=day(dates()[MI]);
-  $('ml').innerHTML=o.exp.map((e,j)=>'<div class="row"><select class="c" data-j="'+j+'" data-f="c">'+CATS.map(c=>'<option value="'+esc(c)+'"'+(c===e.c?' selected':'')+'>'+L(c)+'</option>').join('')+'</select><input class="a" type="number" inputmode="decimal" placeholder="'+L('Amount')+'" data-j="'+j+'" data-f="a" value="'+esc(e.a)+'"><select class="t" data-j="'+j+'" data-f="t"><option value="cash"'+(e.t==='credit'?'':' selected')+'>'+L('Cash')+'</option><option value="credit"'+(e.t==='credit'?' selected':'')+'>'+L('Credit')+'</option></select><input class="n" placeholder="'+L('What is this expense?')+'" data-j="'+j+'" data-f="n" value="'+esc(e.n)+'"><button class="x" type="button" aria-label="'+L('Remove expense')+'" data-dj="'+j+'">×</button></div>').join('');
+  $('ml').innerHTML=o.exp.map((expense,index)=>`<div class="row">
+    <select class="c" aria-label="${L('Category')}" data-j="${index}" data-f="c">
+      ${CATS.map(category=>`<option value="${esc(category)}"${category===expense.c?' selected':''}>${L(category)}</option>`).join('')}
+    </select>
+    <input class="a" type="number" inputmode="decimal" placeholder="${L('Amount')}" data-j="${index}" data-f="a" value="${esc(expense.a)}">
+    <select class="t" aria-label="${L('Payment method')}" data-j="${index}" data-f="t">
+      <option value="cash"${isCr(expense)?'':' selected'}>${L('Cash')}</option>
+      <option value="credit"${isCr(expense)?' selected':''}>${L('Credit')}</option>
+    </select>
+    <input class="n" placeholder="${L('What is this expense?')}" data-j="${index}" data-f="n" value="${esc(expense.n)}">
+    <button class="x" type="button" aria-label="${L('Remove expense')}" data-dj="${index}">×</button>
+    ${expense.c===SALARIES?workerPicker(expense,index):''}
+  </div>`).join('');
   mtot();
 }
+$('ml').addEventListener('submit',event=>{
+  const form=event.target;
+  if(form.dataset.addWorker===undefined)return;
+  event.preventDefault();
+  const name=workerName(form.elements.worker.value);
+  if(!persistLedger||MI<0||!name)return;
+  const index=Number(form.dataset.addWorker);
+  const expense=day(dates()[MI]).exp[index];
+  if(expense?.c!==SALARIES)return;
+  expense.worker=rememberWorker(S.workers,name);
+  save();
+  drawM();
+  upd(MI);
+  $('worker-'+index).focus();
+});
 function expenseTitle(){
   const date=dates()[MI];
   $('mt').textContent=L('Expenses')+' · '+dn(date)+' '+sd(date);
@@ -353,14 +467,33 @@ const onIn=e=>{
   if(!persistLedger)return;
   const t=e.target;
   if(t.id==='cu'){S.cur=t.value;drawDays();totals();save();return}
-  if(t.dataset.j!=null&&MI>=0){const o=day(dates()[MI]);if(o.exp[+t.dataset.j]){o.exp[+t.dataset.j][t.dataset.f]=t.value;save();upd(MI);mtot()}return}
+  if(t.dataset.j!=null&&MI>=0){
+    if(t.tagName==='SELECT'&&e.type!=='change')return;
+    const expense=day(dates()[MI]).exp[Number(t.dataset.j)];
+    const field=t.dataset.f;
+    if(!expense||expense[field]===t.value)return;
+    expense[field]=t.value;
+    if(field==='c'){
+      if(expense.c!==SALARIES)delete expense.worker;
+      drawM();
+      $('ml').querySelector('[data-f="c"][data-j="'+t.dataset.j+'"]')?.focus();
+    }
+    save();
+    upd(MI);
+    mtot();
+    return;
+  }
   if(t.dataset.i!=null&&t.dataset.f){day(dates()[+t.dataset.i])[t.dataset.f]=t.value;save();upd(+t.dataset.i)}
 };
 document.addEventListener('input',onIn);
 document.addEventListener('change',onIn);
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
-  if(t.dataset.e!=null)openM(+t.dataset.e);
+  if(t.id==='weekly-salaries'){
+    showSalaryDetails(weeklySalaries());
+    $('salary-dialog').showModal();
+  }
+  else if(t.dataset.e!=null)openM(+t.dataset.e);
   else if(t.dataset.dj!=null&&MI>=0){day(dates()[MI]).exp.splice(+t.dataset.dj,1);save();drawM();upd(MI)}
 });
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
@@ -554,7 +687,10 @@ function canvases(){
   }
   if(expenses.length)expensePage();
   expenses.forEach((expense,i)=>{
-    const lines=wrapNote(expense.n);
+    const note=expense.c===SALARIES&&expense.worker
+      ? [expense.worker,expense.n].filter(Boolean).join(' · ')
+      : expense.n;
+    const lines=wrapNote(note);
     let offset=0;
     while(offset<lines.length){
       if(y+65>1615)expensePage();
