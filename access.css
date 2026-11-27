@@ -56,6 +56,8 @@
 }
 .sign-in h1 { margin: 14px 0 20px; font-size: clamp(1.8rem, 7.5vw, 2.35rem); line-height: 1.2; }
 .access-ui .brand, .access-ui .text-button { color: #195c46; font-weight: 700; }
+.sign-in .app-brand { display: inline-flex; align-items: center; gap: 8px; }
+.sign-in .app-brand img { flex: none; border-radius: 6px; }
 .sign-in [data-action="language"] { min-height: 38px; font-size: .9rem; }
 .sign-in [data-action="google"] {
   display: inline-flex;

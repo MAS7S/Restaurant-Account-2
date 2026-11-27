@@ -27,7 +27,9 @@ jobs:
       - name: Stage public app files
         run: |
           mkdir -p hosting-dist
-          cp index.html access.css access.js firebase-config.js hosting-dist/
+          cp index.html access.css access.js firebase-config.js manifest.webmanifest register-pwa.js service-worker.js hosting-dist/
+          mkdir -p hosting-dist/icons
+          cp icons/app-*.png hosting-dist/icons/
       - name: Deploy live Hosting site
         shell: bash
         env:
