@@ -111,7 +111,7 @@ function render() {
       ${role !== 'worker' ? `<button class="outline" data-action="users">${icons.users}${t('users')}</button>` : ''}
       <button class="outline" data-action="logout">${icons.logout}${t('logout')}</button>
       <button class="outline" data-action="language">${icons.language}${toggleLabel()}</button>
-      </nav><button type="button" class="edit-profile-name" data-action="edit-name"><span id="signed-in-name"></span><span class="edit-name-label">${t('editName')}</span></button><p class="message" id="access-message" role="status"></p>
+      </nav><button type="button" class="edit-profile-name" data-action="edit-name" aria-haspopup="dialog"><bdi id="signed-in-name"></bdi></button><p class="message" id="access-message" role="status"></p>
       ${importLocal ? `<button class="outline" data-action="import">${t('importLocal')}</button>` : ''}
       <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
     $('signed-in-name').textContent = profileName || user.displayName || user.email;

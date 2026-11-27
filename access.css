@@ -94,11 +94,9 @@
 .access-bar [data-action="logout"] svg { color: #76513e; }
 .access-bar [data-action="language"] svg { color: #465e85; }
 .edit-profile-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
+  display: inline-block;
   max-width: 100%;
+  min-height: 36px;
   padding: 4px 8px;
   border: 0;
   background: transparent;
@@ -107,9 +105,8 @@
   text-align: start;
   overflow-wrap: anywhere;
 }
-.edit-name-label {
+.edit-profile-name:hover {
   color: var(--access-green);
-  font-size: .85em;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
