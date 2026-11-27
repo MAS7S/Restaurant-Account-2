@@ -164,10 +164,10 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
 body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 #accounts-app button,#accounts-app input,#accounts-app select{font-family:inherit}
 #accounts-app :is(button,input,select,summary):focus-visible{outline:2px solid #29ad81;outline-offset:2px}
-#accounts-app .ban{background:#123e32;border-radius:0;padding:clamp(19px,4vw,37px) 16px;color:#fff}
-#accounts-app .bn button{font-size:clamp(1.4rem,4vw,2.05rem);text-decoration:none}
+#accounts-app .ban{background:#fff;border-radius:0;border-bottom:1px solid #dce8e0;padding:12px max(12px,calc((100% - 1096px) / 2)) 16px;color:#192f27;text-align:start}
+#accounts-app .bn button{padding:0;text-align:start;font-size:clamp(1.4rem,4vw,2.05rem);text-decoration:none;overflow-wrap:anywhere}
 #accounts-app .bn button:hover{text-decoration:underline}
-#accounts-app .bt{font-size:.91rem;color:#cce5d9}
+#accounts-app .bt{font-size:.91rem;color:#52675d}
 .ledger-layout{max-width:1120px;gap:clamp(12px,3vw,28px)}
 .ledger-layout main{max-width:none;padding-block:14px 24px}
 .ledger-layout .card{border:1px solid var(--bd);border-radius:15px;box-shadow:none;padding:clamp(11px,2.5vw,18px);margin-bottom:12px}
@@ -353,6 +353,11 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
   <form id="payment-edit-form" class="employee-panel">
     <label for="history-payment-amount" data-i18n="Amount">Amount</label>
     <input id="history-payment-amount" type="number" min="0.01" max="999999999" step="0.01" inputmode="decimal" required>
+    <label for="history-payment-method" data-i18n="Payment method">Payment method</label>
+    <select id="history-payment-method">
+      <option value="cash" data-i18n="Cash">Cash</option>
+      <option value="credit" data-i18n="Credit">Credit</option>
+    </select>
     <button type="submit" class="primary" data-i18n="Save">Save</button>
   </form>
   <form method="dialog" class="dialog-footer"><button class="outline" data-i18n="Close">Close</button></form>
@@ -575,6 +580,7 @@ window.restaurantAccounts={
     $('payment-edit-dialog').close();
     paymentTarget=null;
     $('history-payment-amount').value='';
+    $('history-payment-method').value='cash';
     $('payment-detail').close();
     $('payment-detail-content').replaceChildren();
     $('employees-dialog').close();
@@ -854,6 +860,7 @@ function showPaymentDetails({date,expense}){
   details.innerHTML=`<dl class="payment-facts">
     <div><dt>${L('Payment date')}</dt><dd>${paidDate}</dd></div>
     <div><dt>${L('Amount')}</dt><dd><bdi>${esc(money(num(expense.a)))}</bdi></dd></div>
+    <div><dt>${L('Payment method')}</dt><dd>${L(isCr(expense)?'Credit':'Cash')}</dd></div>
     <div><dt>${L('Payment period')}</dt><dd>${period?weekLabel(period):L('Period not recorded')}</dd></div>
   </dl>
   ${period&&!expense.payrollWeek?'<p>'+L('Period estimated from the payment date.')+'</p>':''}
@@ -938,6 +945,7 @@ $('workforce-list').addEventListener('click',event=>{
   }else if(action==='edit'){
     paymentTarget=target;
     $('history-payment-amount').value=target.expense.a;
+    $('history-payment-method').value=isCr(target.expense)?'credit':'cash';
     $('payment-edit-dialog').showModal();
   }else if(suppressHistoryClick&&event.detail!==0){
     suppressHistoryClick=false;
@@ -957,6 +965,7 @@ $('payment-edit-form').onsubmit=event=>{
     return;
   }
   target.expense.a=amount;
+  target.expense.t=$('history-payment-method').value==='credit'?'credit':'cash';
   $('payment-edit-dialog').close();
   save();
   render();
