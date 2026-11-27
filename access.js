@@ -102,7 +102,7 @@ function render() {
       <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
     $('signed-in-name').textContent = user.displayName || user.email;
   } else {
-    screen.innerHTML = `<article><div class="spread"><strong class="brand">Restaurant Accounts</strong>
+    screen.innerHTML = `<article><div class="spread"><strong class="brand app-brand"><img src="./icons/app-192.png" width="28" height="28" alt="">Restaurant Accounts</strong>
       <button class="outline" data-action="language">${toggleLabel()}</button></div><h1>${t('signIn')}</h1>
       ${['login', 'setup'].includes(stage) ? `<form id="login-form"><fieldset ${stage === 'setup' ? 'disabled' : ''}>
         <button type="button" class="outline" data-action="google">${icons.google}${t('google')}</button>
