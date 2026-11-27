@@ -237,6 +237,24 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 #ml .a{touch-action:pan-y}
 .expense-swipe-hint{display:none;color:var(--mut);font-size:.77rem;margin:0 0 8px}
 @media(pointer:coarse){.expense-swipe-hint{display:block}}
+.staff-add-toggle{margin:0 0 4px}
+.staff-add-toggle span[aria-hidden]{font-weight:700;margin-inline-end:4px}
+.employee-history .payment-row{position:relative;display:block;overflow:hidden;padding:0;--swipe-offset:80px}
+.access-ui .payment-line{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 3px;background:#fff;border:0;color:inherit;text-align:start;transition:transform .16s ease}
+.payment-line strong{min-width:72px;text-align:end;touch-action:pan-y;user-select:none;white-space:nowrap}
+.payment-row[data-revealed="delete"] .payment-line{transform:translateX(var(--swipe-offset))}
+.payment-row[data-revealed="edit"] .payment-line{transform:translateX(calc(-1 * var(--swipe-offset)))}
+.access-ui .payment-action{position:absolute;top:0;bottom:0;width:var(--swipe-offset);border:0;color:#fff;font-weight:700;padding:4px}
+.payment-remove{left:0;background:#9e3834}
+.payment-edit{right:0;background:#0b6145}
+.payment-line:focus-visible{outline-offset:-3px}
+.payment-facts{margin:0 0 18px}
+.payment-facts div,.payment-shifts li{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid #dce8e0}
+.payment-facts dt{color:#496158}
+.payment-facts dd{margin:0;font-weight:650;text-align:end}
+.payment-shifts{padding:0;list-style:none}
+.payment-shifts li{font-size:.82rem}
+@media(prefers-reduced-motion:reduce){.access-ui .payment-line{transition:none}}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -319,15 +337,31 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
     <div><h2 id="employees-title" data-i18n="Employees">Employees</h2><p id="employee-period"></p></div>
     <form method="dialog"><button type="submit" class="outline" data-i18n="Close">Close</button></form>
   </div>
-  <form id="worker-roster-form" class="staff-add">
+  <button type="button" class="outline staff-add-toggle" id="toggle-add-worker"
+    aria-controls="worker-roster-form" aria-expanded="false"><span aria-hidden="true">+</span><span data-i18n="Add">Add</span></button>
+  <form id="worker-roster-form" class="staff-add" hidden>
     <label for="new-worker" data-i18n="Worker name">Worker name</label>
     <div class="ledger-field-row">
       <input id="new-worker" name="worker" maxlength="80" required placeholder="Worker name" data-placeholder="Worker name">
-      <button type="submit" data-i18n="Add worker">Add worker</button>
+      <button type="submit" data-i18n="Save">Save</button>
     </div>
   </form>
   <div class="worker-chips" id="employee-list"></div>
   <div id="workforce-list"></div>
+</dialog>
+<dialog class="access-ui dialog" id="payment-detail" aria-labelledby="payment-detail-title">
+  <h2 id="payment-detail-title" data-i18n="Payment details">Payment details</h2>
+  <div id="payment-detail-content"></div>
+  <form method="dialog" class="dialog-footer"><button class="outline" data-i18n="Close">Close</button></form>
+</dialog>
+<dialog class="access-ui dialog" id="payment-edit-dialog" aria-labelledby="payment-edit-title">
+  <h2 id="payment-edit-title" data-i18n="Edit payment">Edit payment</h2>
+  <form id="payment-edit-form" class="employee-panel">
+    <label for="history-payment-amount" data-i18n="Amount">Amount</label>
+    <input id="history-payment-amount" type="number" min="0.01" max="999999999" step="0.01" inputmode="decimal" required>
+    <button type="submit" class="primary" data-i18n="Save">Save</button>
+  </form>
+  <form method="dialog" class="dialog-footer"><button class="outline" data-i18n="Close">Close</button></form>
 </dialog>
 <dialog class="access-ui dialog timesheet" id="timesheet" aria-labelledby="timesheet-title">
   <div class="schedule-header">
@@ -387,6 +421,11 @@ const translations = {
   'Cash net':'صافي النقدي', 'Credit net':'صافي الآجل', 'Daily details':'التفاصيل اليومية',
   Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
   'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
+  Add:'إضافة', Edit:'تعديل', Delete:'حذف', 'Payment details':'تفاصيل الدفعة',
+  'Edit payment':'تعديل الدفعة', 'Payment period':'فترة الدوام',
+  'Period not recorded':'الفترة غير مسجّلة', 'Period estimated from the payment date.':'الفترة تقديرية، بناءً على تاريخ الدفعة.',
+  'No saved hours for this period.':'لا توجد ساعات محفوظة لهذه الفترة.',
+  'Delete this salary payment?':'هل تريد حذف دفعة الراتب هذه؟',
   Employees:'الموظفون', Schedule:'الجدول', 'Salary history':'سجل الرواتب',
   'Enter the hourly rate to set shifts.':'اكتب أجر الساعة لعرض أيام الدوام.',
   'Payment date':'تاريخ دفع الراتب',
@@ -539,6 +578,11 @@ window.restaurantAccounts={
     $('pv')?.remove();
     $('salary-dialog').close();
     $('timesheet').close();
+    $('payment-edit-dialog').close();
+    paymentTarget=null;
+    $('history-payment-amount').value='';
+    $('payment-detail').close();
+    $('payment-detail-content').replaceChildren();
     $('employees-dialog').close();
     selectedEmployee='';
     employeePanel='pay';
@@ -548,7 +592,7 @@ window.restaurantAccounts={
     $('hourly-rate').value='';
     $('timesheet-days').replaceChildren();
     $('timesheet-total').textContent='';
-    $('worker-roster-form').reset();
+    showAddWorker(false);
     $('salary-period').textContent='';
     $('salary-breakdown').replaceChildren();
     S=emptyLedger();
@@ -693,10 +737,10 @@ function shiftMinutes(shift){
   return (minute(shift.end)-minute(shift.start)+1440)%1440;
 }
 const hoursLabel=minutes=>Math.floor(minutes/60)+':'+pad(minutes%60);
-function scheduleTotals(worker){
-  const sheet=workerSchedule(worker);
-  const rate=Number(sheet?.rate??defaultRate(worker));
-  const days=dates(staffDate()).map(date=>{
+function scheduleTotals(worker,week=staffDate()){
+  const sheet=workerSchedule(worker,week);
+  const rate=Number(sheet?.rate??defaultRate(worker,week));
+  const days=dates(week).map(date=>{
     const minutes=shiftMinutes(sheet?.shifts[date]);
     return {date,minutes,cents:Math.round(minutes*rate*100/60)};
   });
@@ -775,13 +819,125 @@ function renderWorkers(){
 
 function salaryHistory(worker){
   const payments=Object.entries(S.days).sort(([a],[b])=>b.localeCompare(a)).flatMap(([date,day])=>
-    day.exp.filter(expense=>expense.c===SALARIES&&expense.worker===worker&&num(expense.a))
-      .map(expense=>({date,expense})));
+    day.exp.map((expense,index)=>({date,expense,index})).filter(({expense})=>
+      expense.c===SALARIES&&expense.worker===worker&&num(expense.a)));
   if(!payments.length)return '<p>'+L('No recorded salaries.')+'</p>';
-  return `<ul class="employee-history">${payments.map(({date,expense})=>`<li>
-    <span>${parse(date).toLocaleDateString(locale(),{dateStyle:'medium'})} · ${L(isCr(expense)?'Credit':'Cash')}</span>
-    <strong><bdi>${esc(money(num(expense.a)))}</bdi></strong></li>`).join('')}</ul>`;
+  return `<ul class="employee-history">${payments.map(({date,expense,index})=>`<li class="payment-row" data-payment-date="${date}" data-payment-index="${index}">
+    <button type="button" class="payment-action payment-remove" data-payment-action="delete" hidden>${L('Delete')}</button>
+    <button type="button" class="payment-action payment-edit" data-payment-action="edit" hidden>${L('Edit')}</button>
+    <button type="button" class="payment-line" data-open-payment aria-haspopup="dialog" aria-keyshortcuts="ArrowRight ArrowLeft">
+      <span>${parse(date).toLocaleDateString(locale(),{dateStyle:'medium'})} · ${L(isCr(expense)?'Credit':'Cash')}</span>
+      <strong data-payment-amount><bdi>${esc(money(num(expense.a)))}</bdi></strong>
+    </button></li>`).join('')}</ul>`;
 }
+
+let paymentTarget=null;
+function paymentFromRow(row){
+  const date=row.dataset.paymentDate;
+  const index=Number(row.dataset.paymentIndex);
+  const expense=S.days[date]?.exp[index];
+  return expense?.c===SALARIES&&expense.worker===selectedEmployee?{date,index,expense}:null;
+}
+function revealPaymentAction(row,action){
+  for(const item of $('workforce-list').querySelectorAll('.payment-row[data-revealed]')){
+    delete item.dataset.revealed;
+    for(const control of item.querySelectorAll('[data-payment-action]'))control.hidden=true;
+  }
+  if(!action)return;
+  row.dataset.revealed=action;
+  row.querySelector('[data-payment-action="'+action+'"]').hidden=false;
+}
+function showPaymentDetails({date,expense}){
+  const matching=weeks().filter(week=>dates(week).includes(date));
+  const period=expense.payrollWeek||(matching.length===1?matching[0]:null);
+  const sheet=period?workerSchedule(expense.worker,period):null;
+  const details=$('payment-detail-content');
+  const paidDate=parse(date).toLocaleDateString(locale(),{dateStyle:'medium'});
+  const summary=scheduleTotals(expense.worker,period||staffDate());
+  details.innerHTML=`<dl class="payment-facts">
+    <div><dt>${L('Payment date')}</dt><dd>${paidDate}</dd></div>
+    <div><dt>${L('Amount')}</dt><dd><bdi>${esc(money(num(expense.a)))}</bdi></dd></div>
+    <div><dt>${L('Payment period')}</dt><dd>${period?weekLabel(period):L('Period not recorded')}</dd></div>
+  </dl>
+  ${period&&!expense.payrollWeek?'<p>'+L('Period estimated from the payment date.')+'</p>':''}
+  <h3>${L('Work schedule')}</h3>
+  ${sheet?`<ul class="payment-shifts">${summary.days.map(({date,minutes})=>{
+    const shift=sheet.shifts[date];
+    const times=shift?.off?L('Day off'):shift?.start&&shift?.end?shift.start+' – '+shift.end:'—';
+    return `<li><span>${dn(date)} · ${sd(date)}</span><bdi>${times}</bdi><strong><bdi>${hoursLabel(minutes)}</bdi></strong></li>`;
+  }).join('')}</ul><p>${L('Week total')} · <bdi>${hoursLabel(summary.minutes)}</bdi></p>`:
+    '<p>'+L('No saved hours for this period.')+'</p>'}`;
+  $('payment-detail').showModal();
+}
+
+let historySwipe=null;
+let suppressHistoryClick=false;
+$('workforce-list').addEventListener('pointerdown',event=>{
+  suppressHistoryClick=false;
+  const amount=event.target.closest('[data-payment-amount]');
+  if(!amount||!event.isPrimary||event.button!==0)return;
+  historySwipe={id:event.pointerId,x:event.clientX,y:event.clientY,row:amount.closest('.payment-row')};
+});
+document.addEventListener('pointercancel',event=>{
+  if(historySwipe?.id===event.pointerId)historySwipe=null;
+});
+document.addEventListener('pointerup',event=>{
+  if(historySwipe?.id!==event.pointerId)return;
+  const {x,y,row}=historySwipe;
+  historySwipe=null;
+  const dx=event.clientX-x,dy=event.clientY-y;
+  if(!row.isConnected||Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.4)return;
+  suppressHistoryClick=true;
+  revealPaymentAction(row,dx>0?'delete':'edit');
+});
+$('workforce-list').addEventListener('keydown',event=>{
+  const trigger=event.target.closest('[data-open-payment]');
+  if(!trigger||!['ArrowLeft','ArrowRight'].includes(event.key))return;
+  event.preventDefault();
+  const row=trigger.closest('.payment-row');
+  const action=event.key==='ArrowRight'?'delete':'edit';
+  revealPaymentAction(row,action);
+  row.querySelector('[data-payment-action="'+action+'"]').focus();
+});
+$('workforce-list').addEventListener('click',event=>{
+  const row=event.target.closest('.payment-row');
+  if(!row)return;
+  const button=event.target.closest('button');
+  const target=paymentFromRow(row);
+  if(!button||!target||!persistLedger)return;
+  const action=button.dataset.paymentAction;
+  if(action==='delete'){
+    if(!confirm(L('Delete this salary payment?')))return;
+    S.days[target.date].exp.splice(target.index,1);
+    save();
+    render();
+  }else if(action==='edit'){
+    paymentTarget=target;
+    $('history-payment-amount').value=target.expense.a;
+    $('payment-edit-dialog').showModal();
+  }else if(suppressHistoryClick&&event.detail!==0){
+    suppressHistoryClick=false;
+  }else if(row.dataset.revealed){
+    revealPaymentAction(row,null);
+  }else{
+    showPaymentDetails(target);
+  }
+});
+$('payment-edit-form').onsubmit=event=>{
+  event.preventDefault();
+  const amount=wageValue($('history-payment-amount').value);
+  const target=paymentTarget;
+  if(!persistLedger||!target||Number(amount)<=0)return;
+  if(S.days[target.date]?.exp[target.index]!==target.expense){
+    $('payment-edit-dialog').close();
+    return;
+  }
+  target.expense.a=amount;
+  $('payment-edit-dialog').close();
+  save();
+  render();
+};
+$('payment-edit-dialog').addEventListener('close',()=>{paymentTarget=null});
 
 function editableSchedule(worker){
   let sheet=workerSchedule(worker);
@@ -837,8 +993,16 @@ function updateScheduleTotals(){
   $('timesheet-total').textContent=hoursLabel(minutes)+' · '+money(cents/100);
 }
 
+function showAddWorker(open){
+  $('worker-roster-form').hidden=!open;
+  $('toggle-add-worker').setAttribute('aria-expanded',String(open));
+  if(open)$('new-worker').focus();
+  else $('worker-roster-form').reset();
+}
+$('toggle-add-worker').onclick=()=>showAddWorker($('worker-roster-form').hidden);
 $('open-employees').onclick=()=>{
   if(!persistLedger)return;
+  showAddWorker(false);
   $('employees-dialog').showModal();
   renderWorkers();
 };
@@ -861,7 +1025,7 @@ $('schedule-workers').onclick=event=>{
   if(button.id==='schedule-add-worker'){
     $('timesheet').close();
     $('open-employees').click();
-    $('new-worker').focus();
+    showAddWorker(true);
   }else{
     scheduleWorker=S.workers[Number(button.dataset.selectWorker)];
     renderSchedule();
@@ -876,9 +1040,10 @@ $('worker-roster-form').onsubmit=event=>{
   if(!name)return;
   selectedEmployee=name;
   employeePanel='pay';
-  input.value='';
+  showAddWorker(false);
   save();
   renderWorkers();
+  $('toggle-add-worker').focus();
 };
 $('workforce-list').addEventListener('click',event=>{
   const button=event.target.closest('button');
