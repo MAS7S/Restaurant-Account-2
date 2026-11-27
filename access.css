@@ -84,10 +84,16 @@
 .sign-in .stack { display: grid; gap: 10px; margin-top: 16px; }
 .sign-in .stack .brand { background: transparent; border-color: #a3b4aa; }
 
-.access-bar { padding: 13px 10px 16px; background: #fff; border-bottom: 1px solid var(--access-border); }
+.access-bar { padding: 12px max(12px, calc((100% - 1096px) / 2)) 10px; background: #fff; border-bottom: 1px solid #dce8e0; }
 .access-bar .dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: #15954c; }
-.access-bar nav { display: flex; flex-wrap: wrap; gap: 5px; margin: 13px 0 12px; }
-.access-bar .outline { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 9px; font-size: .78rem; }
+.access-bar nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 8px; }
+.access-bar .outline { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 9px; font-size: .82rem; }
+.access-bar .language-icon { justify-content: center; width: 40px; padding: 0; }
+.access-bar nav .outline:hover { background: #edf5f0; }
+@media (max-width: 390px) {
+  .access-bar nav { gap: 4px; }
+  .access-bar nav .outline { gap: 4px; padding-inline: 6px; font-size: .76rem; }
+}
 .access-bar svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .access-bar [data-action="grant"] svg { color: #984534; }
 .access-bar [data-action="users"] svg { color: #356148; }
@@ -97,7 +103,7 @@
   display: inline-block;
   max-width: 100%;
   min-height: 36px;
-  padding: 4px 8px;
+  padding: 3px 0;
   border: 0;
   background: transparent;
   color: inherit;
@@ -157,6 +163,3 @@
   border-color: #dce8e0;
   box-shadow: 0 12px 30px #163c2920;
 }
-.access-bar { border-bottom-color: #dce8e0; }
-.access-bar nav { gap: 7px; }
-.access-bar nav .outline:hover { background: #edf5f0; }
