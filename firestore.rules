@@ -1,69 +1,29 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // access/{email}: role, restaurant (manager email), state, uid.
-    // restaurants/{restaurant}: serialized accounting state.
-    function verified() {
-      return request.auth != null && request.auth.token.email_verified == true
-        && request.auth.token.email is string;
+    match /app_config/invites {
+      allow read: if request.auth != null && request.auth.token.email_verified == true;
+      allow write: if request.auth != null && request.auth.token.email == 'malekshahbien@gmail.com';
     }
-    function email() {
-      return request.auth.token.email.lower();
-    }
-    function owner() {
-      return verified() && request.auth.uid == 'MgrAoVZTREPEFHl9pgsspz89a9E2';
-    }
-    function grant(key) {
-      return get(/databases/$(database)/documents/access/$(key)).data;
-    }
-    function active(data) {
-      return data.state == 'active' && data.uid == request.auth.uid;
-    }
-    function manager() {
-      return verified() && grant(email()).role == 'manager' && active(grant(email()));
-    }
-    function canManage(data) {
-      return (owner() && data.role == 'manager')
-        || (data.role == 'worker' && manager() && data.restaurant == email());
-    }
-    function validGrant(data, key) {
-      return data.keys().hasOnly(['role', 'restaurant', 'state', 'uid'])
-        && key.size() <= 254 && key.matches('^[^@/ ]+@[^@/ ]+[.][^@/ ]+$')
-        && key == key.lower()
-        && data.restaurant is string && data.restaurant.size() <= 254
-        && ((data.role == 'manager' && data.restaurant == key)
-          || (data.role == 'worker' && data.restaurant != key))
-        && data.uid is string && data.uid.size() <= 128
-        && data.state in ['pending', 'active', 'revoked']
-        && (data.state == 'active' ? data.uid.size() > 0 : data.uid == '');
-    }
-    function canAccessRestaurant(key) {
-      return verified() && ((key == email() && (owner() || manager()))
-        || (grant(email()).role == 'worker' && active(grant(email()))
-          && grant(email()).restaurant == key && grant(key).role == 'manager'
-          && grant(key).state == 'active'));
-    }
-    function validAccounts(data) {
-      return data.keys().hasOnly(['ledger']) && data.ledger is string
-        && data.ledger.size() > 0 && data.ledger.size() <= 250000;
-    }
-    match /access/{key} {
-      allow get: if verified() && (email() == key || canManage(resource.data));
-      allow list: if canManage(resource.data);
-      allow create: if validGrant(request.resource.data, key)
-        && canManage(request.resource.data) && request.resource.data.state == 'pending';
-      allow update: if validGrant(request.resource.data, key)
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.restaurant == resource.data.restaurant
-        && ((canManage(resource.data)
-          && (request.resource.data.state == 'revoked'
-            || (resource.data.state == 'revoked' && request.resource.data.state == 'pending')))
-          || (verified() && email() == key && resource.data.state == 'pending'
-            && request.resource.data.state == 'active' && request.resource.data.uid == request.auth.uid));
-    }
-    match /restaurants/{key} {
-      allow get: if canAccessRestaurant(key);
-      allow create, update: if canAccessRestaurant(key) && validAccounts(request.resource.data);
+    match /restaurants/{docId} {
+      allow read: if request.auth != null && request.auth.token.email.lower() in resource.data.memberEmails;
+      allow create: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.auth.token.email.lower() in request.resource.data.memberEmails
+        && (
+          request.auth.token.email == 'malekshahbien@gmail.com'
+          || request.auth.token.email.lower() in get(/databases/$(database)/documents/app_config/invites).data.owners
+        );
+      allow update: if request.auth != null
+        && request.auth.token.email.lower() in resource.data.memberEmails
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.ownerEmail == resource.data.ownerEmail
+        && (
+          request.auth.uid == resource.data.ownerUid
+          || request.resource.data.memberEmails == resource.data.memberEmails
+        );
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
     }
   }
 }
