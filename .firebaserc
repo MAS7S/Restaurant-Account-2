@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "restaurant-3be9c"
+  },
+  "targets": {
+    "restaurant-3be9c": {
+      "hosting": {
+        "restaurant-account-2": [
+          "restaurant-account-2"
+        ]
+      }
+    }
   }
 }
