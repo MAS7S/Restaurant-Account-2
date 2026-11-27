@@ -17,7 +17,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:Arial,Helvetica,sans-serif}
 .ban{background:linear-gradient(135deg,#0f8b8d,#2f6fdb);color:#fff;border-radius:0 0 22px 22px;padding:18px;text-align:center}
-.bn{font-size:22px;font-weight:bold}.bt{font-size:13px;margin-top:6px;opacity:.95}
+.bn{font-size:22px;font-weight:bold}.bn button{background:none;color:inherit;border:0;font:inherit;text-decoration:underline;text-underline-offset:4px;cursor:pointer}.bt{font-size:13px;margin-top:6px;opacity:.95}
 main{padding:12px;max-width:640px;margin:0 auto}
 .card{background:var(--card);border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 label{display:block;font-size:12px;font-weight:bold;margin:8px 0 3px}
@@ -64,6 +64,16 @@ h3{margin:0 0 8px;font-size:15px}
 #pv img{width:100%;display:block;margin:0 0 10px;border-radius:8px;background:#fff}
 .pvh{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;font-size:13px;position:sticky;top:0;background:var(--bg)}
 .pvh button{flex:none;border:0;border-radius:10px;background:#2f6fdb;color:#fff;font:bold 14px Arial;padding:10px 14px}
+.ledger-tools h3{margin-top:16px}
+.ledger-tools h3:first-child{margin-top:0}
+.ledger-tools button{min-height:44px;border:1px solid var(--bd);border-radius:12px;padding:8px;background:var(--inp);color:var(--tx);font:inherit;font-weight:700;cursor:pointer}
+.ledger-tools button:disabled{opacity:.5;cursor:default}
+.ledger-tools .primary-report{background:#0b6145;color:white}
+.ledger-tools .clear-week{color:#a43a31;background:#fff4f0;border-color:#ebd1cc;width:100%;margin-top:12px}
+.week-select{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-block:9px}
+.week-select output{text-align:center;font-weight:700}
+.ledger-tools #nx{width:100%}
+[dir="rtl"] .dh span{margin-inline-start:6px;margin-left:0}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -77,18 +87,41 @@ h3{margin:0 0 8px;font-size:15px}
 <section class="access-ui access-bar" id="access-bar" hidden></section>
 <dialog class="access-ui dialog" id="access-dialog"></dialog>
 <div id="accounts-app" hidden>
-<header class="ban"><div class="bn" id="bn">Restaurant Accounts</div><div class="bt" id="bt"></div></header>
+<header class="ban"><div class="bn"><button type="button" id="bn">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
 <main>
 <section class="card">
-<label for="nm">Restaurant name</label><input id="nm" placeholder="Restaurant name">
-<label for="wk">Week starts</label><input id="wk" type="date">
-<label for="cu">Currency</label><input id="cu" placeholder="$">
+<label for="nm" data-i18n="Restaurant name">Restaurant name</label><input id="nm" placeholder="Restaurant name" data-placeholder="Restaurant name">
+<label for="wk" data-i18n="Week starts">Week starts</label><input id="wk" type="date">
+<label for="cu" data-i18n="Currency">Currency</label><input id="cu" placeholder="$">
 </section>
 <div id="days"></div>
-<section class="card"><h3>Week total</h3><div id="wsum"></div></section>
-<div class="btns"><button class="b" id="sh" type="button">Share PDF</button><button class="b" id="pdf" type="button" style="background:#0f8b8d">Save PDF</button><button class="b s" id="nx" type="button">Next week</button></div>
+<section class="card"><h3 data-i18n="Week total">Week total</h3><div id="wsum"></div></section>
+<section class="card ledger-tools">
+  <h3 data-i18n="Weeks">Weeks</h3>
+  <label for="saved-weeks" data-i18n="Saved weeks">Saved weeks</label>
+  <select id="saved-weeks"></select>
+  <div class="week-select">
+    <button id="older" type="button" data-i18n="Older">Older</button>
+    <output id="week-range"></output>
+    <button id="newer" type="button" data-i18n="Newer">Newer</button>
+  </div>
+  <button id="nx" type="button" data-i18n="Save week and start next">Save week and start next</button>
+  <h3 data-i18n="Reports">Reports</h3>
+  <div class="btns">
+    <button class="primary-report" id="pdf" type="button" data-i18n="Save as PDF">Save as PDF</button>
+    <button id="csv" type="button" data-i18n="Export Excel (CSV)">Export Excel (CSV)</button>
+    <button id="sh" type="button" data-i18n="Share PDF">Share PDF</button>
+  </div>
+  <h3 data-i18n="Backup">Backup</h3>
+  <div class="btns">
+    <button id="export-backup" type="button" data-i18n="Export backup">Export backup</button>
+    <button id="import-backup" type="button" data-i18n="Import backup">Import backup</button>
+  </div>
+  <input type="file" id="backup-file" accept=".json,application/json" hidden>
+  <button class="clear-week" id="clear-week" type="button" data-i18n="Clear this week’s numbers">Clear this week’s numbers</button>
+</section>
 </main>
-<div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button">Done</button></div><div id="ml"></div><button class="add" id="ma" type="button">+ Add expense</button><div class="mc"><div>CASH EXPENSES<b id="mc"></b></div><div>CREDIT EXPENSES<b id="mk"></b></div></div></div></div>
+<div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button" data-i18n="Done">Done</button></div><div id="ml"></div><button class="add" id="ma" type="button" data-i18n="+ Add expense">+ Add expense</button><div class="mc"><div><span data-i18n="CASH EXPENSES">CASH EXPENSES</span><b id="mc"></b></div><div><span data-i18n="CREDIT EXPENSES">CREDIT EXPENSES</span><b id="mk"></b></div></div></div></div>
 </div>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -98,52 +131,90 @@ const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parse=s=>{const p=String(s||'').split('-').map(Number);return p.length===3&&p[0]?new Date(p[0],p[1]-1,p[2]):null};
 const addD=(s,n)=>{const d=parse(s)||new Date();d.setDate(d.getDate()+n);return iso(d)};
-const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const dn=s=>DN[parse(s).getDay()];
-const sd=s=>{const d=parse(s);return (d.getMonth()+1)+'/'+d.getDate()};
+const translations = {
+  'Restaurant Accounts':'حسابات المطعم', 'Restaurant name':'اسم المطعم', 'Week starts':'بداية الأسبوع',
+  Currency:'العملة', 'Week total':'إجمالي الأسبوع', Done:'تم', '+ Add expense':'إضافة مصروف',
+  'CASH EXPENSES':'المصروفات النقدية', 'CREDIT EXPENSES':'المصروفات الآجلة',
+  Weeks:'الأسابيع', 'Saved weeks':'الأسابيع المحفوظة', Older:'الأقدم', Newer:'الأحدث',
+  'Save week and start next':'حفظ الأسبوع وبدء التالي', Current:'الحالي',
+  Reports:'التقارير', 'Save as PDF':'حفظ PDF', 'Export Excel (CSV)':'تصدير Excel ‏(CSV)',
+  'Share PDF':'مشاركة PDF', Backup:'النسخ الاحتياطي', 'Export backup':'تصدير نسخة احتياطية',
+  'Import backup':'استيراد نسخة احتياطية', 'Clear this week’s numbers':'مسح أرقام هذا الأسبوع',
+  'Clear all income and expenses for the selected week?':'هل تريد مسح كل الإيرادات والمصروفات للأسبوع المعروض؟',
+  'Replace the entire ledger, including saved weeks, with this backup?':'هل تريد استبدال الدفتر كاملًا، بما فيه الأسابيع المحفوظة، بهذه النسخة؟',
+  'Invalid or oversized backup file.':'ملف النسخة الاحتياطية غير صالح أو يتجاوز الحد المسموح.',
+  'NET PROFIT':'صافي الربح', 'CASH NET':'صافي النقدي', 'CREDIT NET':'صافي الآجل',
+  EXPENSES:'المصروفات', 'TOTAL INCOME':'إجمالي الإيرادات', CREDIT:'آجل', CASH:'نقدي',
+  'Food & supplies':'الأغذية والمستلزمات', Salaries:'الرواتب', Rent:'الإيجار', Utilities:'الخدمات',
+  Maintenance:'الصيانة', 'Cleaning & packaging':'التنظيف والتغليف', Other:'أخرى',
+  Amount:'المبلغ', Cash:'نقدي', Credit:'آجل', 'What is this expense?':'وصف المصروف',
+  'Remove expense':'حذف المصروف', Expenses:'المصروفات', 'Weekly report':'التقرير الأسبوعي',
+  Day:'اليوم', Date:'التاريخ', Income:'الإيرادات', Net:'الصافي', Total:'الإجمالي',
+  'Cash net':'صافي النقدي', 'Credit net':'صافي الآجل', 'Daily details':'التفاصيل اليومية',
+  Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
+  'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
+  Report:'التقرير'
+};
+const ar=()=>document.documentElement.lang==='ar';
+const L=text=>ar()?(translations[text]||text):text;
+const locale=()=>ar()?'ar':'en-US';
+const dn=s=>parse(s).toLocaleDateString(locale(),{weekday:'long'});
+const sd=s=>parse(s).toLocaleDateString(locale(),{month:'short',day:'numeric'});
+const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&parse(s)!==null&&iso(parse(s))===s;
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
-const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
+const fmt=n=>(Math.round(n*100)/100).toLocaleString(locale());
 const CATS=['Food & supplies','Salaries','Rent','Utilities','Maintenance','Cleaning & packaging','Other'];
 function monday(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)}
-const emptyLedger=()=>({name:'',cur:'$',week:monday(),days:{}});
+const emptyLedger=()=>({name:'',cur:'$',week:monday(),savedWeeks:[],days:{}});
 let S=emptyLedger();
+let viewWeek=null;
+const selectedWeek=()=>viewWeek||S.week;
 let persistLedger=null;
 const save=()=>persistLedger?.(JSON.stringify(S));
 
-window.restaurantAccounts={
-  open(serialized, persist){
-    if(MI>=0){MI=-1;$('md').hidden=true;$('ml').replaceChildren()}
-    let data;
-    try { data=JSON.parse(serialized); } catch {}
-    S=emptyLedger();
-    if(data && typeof data==='object'){
-      S.name=typeof data.name==='string'?data.name:'';
-      S.cur=typeof data.cur==='string'?data.cur:'$';
-      if(typeof data.week==='string' && /^\d{4}-\d{2}-\d{2}$/.test(data.week)) S.week=data.week;
-      if(data.days && typeof data.days==='object'){
-        for(const [date, record] of Object.entries(data.days)){
-          if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !record || typeof record!=='object') continue;
-          if(Array.isArray(record.inc)) record.inc=record.inc.filter(e=>e && typeof e.a==='string');
-          norm(record);
-          S.days[date]={
-            cash: typeof record.cash==='string'?record.cash:'',
-            credit: typeof record.credit==='string'?record.credit:'',
-            exp: Array.isArray(record.exp)?record.exp.filter(e=>e && typeof e==='object').map(e=>({
-              a:typeof e.a==='string'?e.a:'',
-              c:CATS.includes(e.c)?e.c:CATS[0],
-              n:typeof e.n==='string'?e.n:'',
-              t:e.t==='credit'?'credit':'cash'
-            })):[]
-          };
-        }
-      }
+function normalizeLedger(data){
+  const ledger=emptyLedger();
+  if(!data||typeof data!=='object')return ledger;
+  if(typeof data.name==='string')ledger.name=data.name;
+  if(typeof data.cur==='string')ledger.cur=data.cur;
+  if(validDate(data.week))ledger.week=data.week;
+  if(Array.isArray(data.savedWeeks))ledger.savedWeeks=[...new Set(data.savedWeeks.filter(validDate))];
+  if(data.days&&typeof data.days==='object'){
+    for(const [date, record] of Object.entries(data.days)){
+      if(!validDate(date)||!record||typeof record!=='object'||Array.isArray(record))continue;
+      if(Array.isArray(record.inc))record.inc=record.inc.filter(e=>e&&typeof e.a==='string');
+      norm(record);
+      ledger.days[date]={
+        cash:typeof record.cash==='string'?record.cash:'',
+        credit:typeof record.credit==='string'?record.credit:'',
+        exp:record.exp.filter(e=>e&&typeof e==='object').map(e=>({
+          a:typeof e.a==='string'?e.a:'',
+          c:CATS.includes(e.c)?e.c:CATS[0],
+          n:typeof e.n==='string'?e.n:'',
+          t:e.t==='credit'?'credit':'cash'
+        }))
+      };
     }
+  }
+  return ledger;
+}
+
+window.restaurantAccounts={
+  open(serialized,persist){
+    MI=-1;
+    $('md').hidden=true;
+    $('ml').replaceChildren();
+    let data;
+    try{data=JSON.parse(serialized)}catch{}
+    S=normalizeLedger(data);
+    if(viewWeek&&!weeks().includes(viewWeek))viewWeek=null;
     persistLedger=persist;
     render();
   },
   save,
   close(){
     persistLedger=null;
+    viewWeek=null;
     MI=-1;
     $('md').hidden=true;
     $('ml').replaceChildren();
@@ -152,7 +223,33 @@ window.restaurantAccounts={
     render();
   }
 };
-const dates=()=>Array.from({length:7},(_,i)=>addD(S.week,i));
+const dates=(week=selectedWeek())=>Array.from({length:7},(_,i)=>addD(week,i));
+const dateOrdinal=date=>Date.parse(date+'T00:00:00Z')/86400000;
+function weeks(){
+  const starts=new Set([S.week,...S.savedWeeks]);
+  const covered=new Set([...starts].flatMap(week=>dates(week)));
+  for(const [date,record] of Object.entries(S.days)){
+    if(covered.has(date)||!(record.cash||record.credit||record.exp.length))continue;
+    const offset=Math.floor((dateOrdinal(date)-dateOrdinal(S.week))/7)*7;
+    starts.add(addD(S.week,offset));
+  }
+  return [...starts].sort();
+}
+function weekLabel(week){
+  const end=addD(week,6);
+  return sd(week)+' – '+parse(end).toLocaleDateString(locale(),{month:'short',day:'numeric',year:'numeric'});
+}
+function showWeek(week){
+  viewWeek=week===S.week?null:week;
+  render();
+}
+function changeCurrentWeek(week){
+  if(!persistLedger||!validDate(week)||week===S.week)return;
+  S.savedWeeks=[...new Set([...weeks(),S.week])].filter(start=>start!==week);
+  S.week=week;
+  showWeek(week);
+  save();
+}
 const sum=a=>a.reduce((t,e)=>t+num(e.a),0);
 const isCr=e=>!!e&&e.t==='credit';
 const norm=o=>{
@@ -164,38 +261,69 @@ const day=d=>norm(S.days[d]||(S.days[d]={}));
 const tot=d=>{const o=S.days[d];if(!o)return{i:0,e:0,ci:0,cr:0,ec:0,ek:0};norm(o);const ci=num(o.cash),cr=num(o.credit),ek=sum(o.exp.filter(isCr)),e=sum(o.exp);return{i:ci+cr,e:e,ci:ci,cr:cr,ec:e-ek,ek:ek}};
 const money=n=>fmt(n)+' '+S.cur;
 const cards=t=>{
-  const b=(c,l,v,a,z)=>'<section class="sc '+c+'"><div class="l">'+l+'</div><div class="v">' +esc(money(v))+'</div><div class="two"><div><span>'+a[0]+'</span><b>'+esc(money(a[1]))+'</b></div><div><span>'+z[0]+'</span><b>'+esc(money(z[1]))+'</b></div></div></section>';
+  const b=(c,l,v,a,z)=>'<section class="sc '+c+'"><div class="l">'+L(l)+'</div><div class="v">' +esc(money(v))+'</div><div class="two"><div><span>'+L(a[0])+'</span><b>'+esc(money(a[1]))+'</b></div><div><span>'+L(z[0])+'</span><b>'+esc(money(z[1]))+'</b></div></div></section>';
   return b('net','NET PROFIT',t.i-t.e,['CASH NET',t.ci-t.ec],['CREDIT NET',t.cr-t.ek])+b('ex','EXPENSES',t.e,['CASH',t.ec],['CREDIT',t.ek])+b('in','TOTAL INCOME',t.i,['CASH',t.ci],['CREDIT',t.cr]);
 };
-function head(){$('bn').textContent=S.name||'Restaurant Accounts';const d=dates();$('bt').textContent='Week: '+sd(d[0])+' - '+sd(d[6])+' ('+d[0].slice(0,4)+')'}
+function head(){
+  $('bn').textContent=S.name||L('Restaurant Accounts');
+  $('bt').textContent=weekLabel(selectedWeek());
+}
 function totals(){
   const W={i:0,e:0,ci:0,cr:0,ec:0,ek:0};
   dates().forEach(x=>{const q=tot(x);for(const k in W)W[k]+=q[k]});
   $('wsum').innerHTML=cards(W);
 }
 function drawDays(){
-  $('days').innerHTML=dates().map((x,i)=>{const o=day(x),t=tot(x);
+  $('days').innerHTML=dates().map((x,i)=>{const o=S.days[x]||{},t=tot(x);
     return '<div class="dr"><div class="dh"><div><b>'+dn(x)+'</b><span>'+sd(x)+'</span></div><div class="dt" id="rt'+i+'">'+esc(money(t.i-t.e))+'</div></div>'
-    +'<div class="g3"><div><label class="lc">CREDIT</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="credit" value="'+esc(o.credit)+'"></div>'
-    +'<div><label class="lk">CASH</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="cash" value="'+esc(o.cash)+'"></div>'
-    +'<div><label class="le">EXPENSES</label><button type="button" class="eb" data-e="'+i+'" id="re'+i+'">'+esc(money(t.e))+'</button></div></div></div>'}).join('');
+    +'<div class="g3"><div><label class="lc">'+L('CREDIT')+'</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="credit" value="'+esc(o.credit)+'"></div>'
+    +'<div><label class="lk">'+L('CASH')+'</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="cash" value="'+esc(o.cash)+'"></div>'
+    +'<div><label class="le">'+L('EXPENSES')+'</label><button type="button" class="eb" data-e="'+i+'" id="re'+i+'">'+esc(money(t.e))+'</button></div></div></div>'}).join('');
 }
 function upd(i){
   const t=tot(dates()[i]),a=$('rt'+i),b=$('re'+i);
   if(a)a.textContent=money(t.i-t.e);if(b)b.textContent=money(t.e);totals();
 }
-function render(){head();$('wk').value=S.week;$('nm').value=S.name;$('cu').value=S.cur;drawDays();totals()}
+function render(){
+  const app=$('accounts-app');
+  app.dir=ar()?'rtl':'ltr';
+  document.title=L('Restaurant Accounts');
+  for(const el of app.querySelectorAll('[data-i18n]'))el.textContent=L(el.dataset.i18n);
+  for(const el of app.querySelectorAll('[data-placeholder]'))el.placeholder=L(el.dataset.placeholder);
+  const all=weeks(), current=selectedWeek(), position=all.indexOf(current);
+  const select=$('saved-weeks');
+  select.replaceChildren(...all.slice().reverse().map(week=>new Option(
+    weekLabel(week)+(week===S.week?' · '+L('Current'):''),week
+  )));
+  select.value=current;
+  $('older').disabled=position<=0;
+  $('newer').disabled=position===all.length-1;
+  $('nx').disabled=current!==S.week;
+  $('wk').disabled=current!==S.week;
+  $('week-range').textContent=weekLabel(current);
+  head();
+  $('wk').value=current;
+  $('nm').value=S.name;
+  $('cu').value=S.cur;
+  drawDays();
+  totals();
+  if(MI>=0){expenseTitle();drawM()}
+}
 
 let MI=-1;
 function mtot(){const t=tot(dates()[MI]);$('mc').textContent=money(t.ec);$('mk').textContent=money(t.ek)}
 function drawM(){
   const o=day(dates()[MI]);
-  $('ml').innerHTML=o.exp.map((e,j)=>'<div class="row"><select class="c" data-j="'+j+'" data-f="c">'+CATS.map(c=>'<option'+(c===e.c?' selected':'')+'>'+c+'</option>').join('')+'</select><input class="a" type="number" inputmode="decimal" placeholder="Amount" data-j="'+j+'" data-f="a" value="'+esc(e.a)+'"><select class="t" data-j="'+j+'" data-f="t"><option value="cash"'+(e.t==='credit'?'':' selected')+'>Cash</option><option value="credit"'+(e.t==='credit'?' selected':'')+'>Credit</option></select><input class="n" placeholder="What is this expense?" data-j="'+j+'" data-f="n" value="'+esc(e.n)+'"><button class="x" type="button" data-dj="'+j+'">×</button></div>').join('');
+  $('ml').innerHTML=o.exp.map((e,j)=>'<div class="row"><select class="c" data-j="'+j+'" data-f="c">'+CATS.map(c=>'<option value="'+esc(c)+'"'+(c===e.c?' selected':'')+'>'+L(c)+'</option>').join('')+'</select><input class="a" type="number" inputmode="decimal" placeholder="'+L('Amount')+'" data-j="'+j+'" data-f="a" value="'+esc(e.a)+'"><select class="t" data-j="'+j+'" data-f="t"><option value="cash"'+(e.t==='credit'?'':' selected')+'>'+L('Cash')+'</option><option value="credit"'+(e.t==='credit'?' selected':'')+'>'+L('Credit')+'</option></select><input class="n" placeholder="'+L('What is this expense?')+'" data-j="'+j+'" data-f="n" value="'+esc(e.n)+'"><button class="x" type="button" aria-label="'+L('Remove expense')+'" data-dj="'+j+'">×</button></div>').join('');
   mtot();
 }
+function expenseTitle(){
+  const date=dates()[MI];
+  $('mt').textContent=L('Expenses')+' · '+dn(date)+' '+sd(date);
+}
 function openM(i){
-  MI=i;const x=dates()[i];$('mt').textContent='Expenses - '+dn(x)+' '+sd(x);
-  const o=day(x);if(!o.exp.length){o.exp.push({c:CATS[0],a:'',t:'cash',n:''});save()}
+  MI=i;expenseTitle();
+  const o=day(dates()[i]);if(!o.exp.length){o.exp.push({c:CATS[0],a:'',t:'cash',n:''});save()}
   drawM();$('md').hidden=false;
 }
 function closeM(){
@@ -207,7 +335,7 @@ const onIn=e=>{
   const t=e.target;
   if(t.id==='nm'){S.name=t.value;head();save();return}
   if(t.id==='cu'){S.cur=t.value;drawDays();totals();save();return}
-  if(t.id==='wk'){if(parse(t.value)){S.week=t.value;save();render()}return}
+  if(t.id==='wk'){changeCurrentWeek(t.value);return}
   if(t.dataset.j!=null&&MI>=0){const o=day(dates()[MI]);if(o.exp[+t.dataset.j]){o.exp[+t.dataset.j][t.dataset.f]=t.value;save();upd(MI);mtot()}return}
   if(t.dataset.i!=null&&t.dataset.f){day(dates()[+t.dataset.i])[t.dataset.f]=t.value;save();upd(+t.dataset.i)}
 };
@@ -221,43 +349,100 @@ document.addEventListener('click',e=>{
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
 $('md').onclick=e=>{if(e.target===$('md'))closeM()};
-$('nx').onclick=()=>{S.week=addD(S.week,7);save();render()};
+$('bn').onclick=()=>{$('nm').focus();$('nm').select()};
+$('nx').onclick=()=>changeCurrentWeek(addD(S.week,7));
+$('older').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())-1])};
+$('newer').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())+1])};
+$('saved-weeks').onchange=event=>showWeek(event.target.value);
+new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+
+function downloadFile(contents,type,name){
+  const url=URL.createObjectURL(new Blob([contents],{type}));
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=name;
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+
+$('csv').onclick=()=>{
+  const rows=[['Date','Day','Cash','Credit','Income','CASH EXPENSES','CREDIT EXPENSES','Expenses','Net','Currency'].map(L)];
+  for(const date of dates()){
+    const t=tot(date);
+    const currency=/^\s*[=+@-]/.test(S.cur)? "'"+S.cur:S.cur;
+    rows.push([date,dn(date),t.ci,t.cr,t.i,t.ec,t.ek,t.e,t.i-t.e,currency]);
+  }
+  const csv=rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\r\n');
+  downloadFile('\uFEFF'+csv,'text/csv;charset=utf-8','Weekly_Report_'+selectedWeek()+'.csv');
+};
+
+$('export-backup').onclick=()=>downloadFile(JSON.stringify(S,null,2),'application/json','Restaurant_Accounts_'+iso(new Date())+'.json');
+$('import-backup').onclick=()=>$('backup-file').click();
+$('backup-file').onchange=async event=>{
+  const input=event.target;
+  const file=input.files[0];
+  const persist=persistLedger;
+  input.value='';
+  if(!file||!persist)return;
+  try{
+    if(file.size>2_000_000)throw new Error();
+    const data=JSON.parse(await file.text());
+    if(persist!==persistLedger)return;
+    if(!data||!validDate(data.week)||!data.days||typeof data.days!=='object'||Array.isArray(data.days))throw new Error();
+    if(Object.entries(data.days).some(([date,record])=>!validDate(date)||!record||typeof record!=='object'||Array.isArray(record)))throw new Error();
+    const replacement=normalizeLedger(data);
+    if(new TextEncoder().encode(JSON.stringify(replacement)).length>250000)throw new Error();
+    if(!confirm(L('Replace the entire ledger, including saved weeks, with this backup?')))return;
+    S=replacement;
+    showWeek(S.week);
+    save();
+  }catch{
+    alert(L('Invalid or oversized backup file.'));
+  }
+};
+$('clear-week').onclick=()=>{
+  if(!persistLedger||!confirm(L('Clear all income and expenses for the selected week?')))return;
+  if(viewWeek&&!S.savedWeeks.includes(viewWeek))S.savedWeeks.push(viewWeek);
+  for(const date of dates())delete S.days[date];
+  render();
+  save();
+};
 
 function canvases(){
   const pages=[];let c,x,y;
   const np=()=>{c=document.createElement('canvas');c.width=1240;c.height=1754;x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,1240,1754);pages.push(c);y=80};
-  const T=(t,px,py,o)=>{o=o||{};x.direction='ltr';x.font=(o.b?'bold ':'')+(o.s||28)+'px Arial,Helvetica,sans-serif';x.fillStyle=o.c||'#1c2b33';x.textAlign=o.a||'left';x.fillText(t,px,py)};
+  const T=(t,px,py,o)=>{o=o||{};x.direction=ar()?'rtl':'ltr';x.font=(o.b?'bold ':'')+(o.s||28)+'px Arial,Helvetica,sans-serif';x.fillStyle=o.c||'#1c2b33';x.textAlign=o.a||'left';x.fillText(t,px,py)};
   const R=(py,h,col)=>{x.fillStyle=col;x.fillRect(70,py,1100,h)};
   const row=(a,b,cc,d,o)=>{T(a,90,y,o);T(b,660,y,Object.assign({a:'center'},o));T(cc,850,y,Object.assign({a:'center'},o));T(d,1050,y,Object.assign({a:'center'},o))};
   np();x.fillStyle='#0f8b8d';x.fillRect(0,0,1240,190);
   const d=dates();
-  T(S.name||'Restaurant Accounts',70,85,{s:48,b:1,c:'#fff'});
-  T('Weekly report: '+sd(d[0])+' - '+sd(d[6])+' / '+d[6].slice(0,4),70,145,{s:30,c:'#fff'});
-  y=270;R(y-45,62,'#d7efee');row('Day','Income','Expenses','Net',{b:1,c:'#094f51'});
+  T(S.name||L('Restaurant Accounts'),70,85,{s:48,b:1,c:'#fff'});
+  T(L('Weekly report')+' · '+weekLabel(selectedWeek()),70,145,{s:30,c:'#fff'});
+  y=270;R(y-45,62,'#d7efee');row(L('Day'),L('Income'),L('Expenses'),L('Net'),{b:1,c:'#094f51'});
   let wi=0,we=0,wci=0,wcr=0,wec=0,wek=0;
   d.forEach(z=>{y+=70;const q=tot(z);wi+=q.i;we+=q.e;wci+=q.ci;wcr+=q.cr;wec+=q.ec;wek+=q.ek;row(dn(z)+' '+sd(z),fmt(q.i),fmt(q.e),fmt(q.i-q.e),{c:'#1c2b33'});x.fillStyle='#cfd9df';x.fillRect(70,y+20,1100,2)});
-  y+=80;R(y-45,62,'#0f8b8d');row('Total',fmt(wi),fmt(we),fmt(wi-we),{b:1,c:'#fff'});
+  y+=80;R(y-45,62,'#0f8b8d');row(L('Total'),fmt(wi),fmt(we),fmt(wi-we),{b:1,c:'#fff'});
   const mm=v=>fmt(v)+' '+S.cur;
   const blk=(title,v0,l1,v1,l2,v2,bg,col,sub)=>{
     y+=20;const tp=y;x.fillStyle=bg;x.fillRect(70,tp,1100,140);
-    T(title,100,tp+46,{b:1,c:col,s:30});T(mm(v0),1140,tp+46,{a:'right',b:1,c:col,s:36});
+    T(L(title),100,tp+46,{b:1,c:col,s:30});T(mm(v0),1140,tp+46,{a:'right',b:1,c:col,s:36});
     x.fillStyle=sub;x.fillRect(95,tp+68,525,58);x.fillRect(630,tp+68,515,58);
-    T(l1,115,tp+107,{b:1,c:col,s:25});T(mm(v1),600,tp+107,{a:'right',b:1,c:col,s:29});
-    T(l2,650,tp+107,{b:1,c:col,s:25});T(mm(v2),1125,tp+107,{a:'right',b:1,c:col,s:29});
+    T(L(l1),115,tp+107,{b:1,c:col,s:25});T(mm(v1),600,tp+107,{a:'right',b:1,c:col,s:29});
+    T(L(l2),650,tp+107,{b:1,c:col,s:25});T(mm(v2),1125,tp+107,{a:'right',b:1,c:col,s:29});
     y=tp+140;
   };
   y+=30;
   blk('TOTAL INCOME',wi,'Cash',wci,'Credit',wcr,'#e3ecfb','#1f4fb2','#cddbf6');
   blk('NET PROFIT',wi-we,'Cash net',wci-wec,'Credit net',wcr-wek,'#e6f4ea','#1e7a33','#cde7d4');
   blk('EXPENSES',we,'Cash',wec,'Credit',wek,'#fbe6e8','#b02a3a','#f4ccd1');
-  T('Currency: '+S.cur,90,y+70,{s:24,c:'#5f7f8f'});
-  y+=150;T('Daily details',70,y,{s:36,b:1,c:'#094f51'});y+=30;
+  T(L('Currency')+' · '+S.cur,90,y+70,{s:24,c:'#5f7f8f'});
+  y+=150;T(L('Daily details'),70,y,{s:36,b:1,c:'#094f51'});y+=30;
   d.forEach(z=>{
     const o=S.days[z];if(!o)return;norm(o);
     const items=[];
-    if(num(o.cash))items.push(['Income - Cash',num(o.cash),'#2f9e44']);
-    if(num(o.credit))items.push(['Income - Credit',num(o.credit),'#2f9e44']);
-    o.exp.forEach(e=>{if(num(e.a)||e.n)items.push(['Expense - '+e.c+' - '+(e.t==='credit'?'Credit':'Cash')+(e.n?': '+String(e.n).slice(0,40):''),num(e.a),'#d6336c'])});
+    if(num(o.cash))items.push([L('Income')+' - '+L('Cash'),num(o.cash),'#2f9e44']);
+    if(num(o.credit))items.push([L('Income')+' - '+L('Credit'),num(o.credit),'#2f9e44']);
+    o.exp.forEach(e=>{if(num(e.a)||e.n)items.push([L('Expense')+' - '+L(e.c)+' - '+L(e.t==='credit'?'Credit':'Cash')+(e.n?': '+String(e.n).slice(0,40):''),num(e.a),'#d6336c'])});
     if(!items.length)return;
     if(y>1500)np();
     y+=65;R(y-42,58,'#d7efee');T(dn(z)+' '+sd(z),90,y,{b:1,c:'#094f51'});
@@ -276,32 +461,32 @@ let D=null;
 try{if(window.claude&&claude.use)claude.use('downloads').then(d=>{D=d}).catch(()=>{})}catch(e){}
 function preview(){
   if($('pv'))return;
-  const w=document.createElement('div');w.id='pv';
-  w.innerHTML='<div class="pvh"><span>Press and hold an image, then choose Share or Save</span><button type="button" id="pvx">Close</button></div>'+canvases().map(c=>'<img alt="Report" src="'+c.toDataURL('image/jpeg',0.9)+'">').join('');
+  const w=document.createElement('div');w.id='pv';w.dir=ar()?'rtl':'ltr';
+  w.innerHTML='<div class="pvh"><span>'+L('Press and hold an image, then choose Share or Save')+'</span><button type="button" id="pvx">'+L('Close')+'</button></div>'+canvases().map(c=>'<img alt="'+L('Report')+'" src="'+c.toDataURL('image/jpeg',0.9)+'">').join('');
   document.body.appendChild(w);$('pvx').onclick=()=>w.remove();
 }
 $('pdf').onclick=async()=>{
   const b=$('pdf'),o=b.textContent,doc=buildPdf();
   const f=t=>{b.textContent=t;setTimeout(()=>{b.textContent=o},2200)};
-  if(!doc){f('Could not create file');return}
-  const name='Weekly_Report_'+S.week+'.pdf';
+  if(!doc){f(L('Could not create file'));return}
+  const name='Weekly_Report_'+selectedWeek()+'.pdf';
   try{
     const buf=doc.output('arraybuffer');
     if(D){await D.save({filename:name,data:buf})}
     else{const u=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
-    f('Saved');
+    f(L('Saved'));
   }catch(e){if(e&&e.code==='declined')return;preview()}
 };
 $('sh').onclick=async()=>{
   const b=$('sh'),o=b.textContent,doc=buildPdf();
   const f=t=>{b.textContent=t;setTimeout(()=>{b.textContent=o},2200)};
-  if(!doc){f('Could not create file');return}
-  const name='Weekly_Report_'+S.week+'.pdf',buf=doc.output('arraybuffer');
+  if(!doc){f(L('Could not create file'));return}
+  const name='Weekly_Report_'+selectedWeek()+'.pdf',buf=doc.output('arraybuffer');
   try{
     const file=new File([buf],name,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}
   }catch(e){if(e&&e.name==='AbortError')return}
-  if(D){try{await D.save({filename:name,data:buf});f('Saved');return}catch(e){if(e&&e.code==='declined')return}}
+  if(D){try{await D.save({filename:name,data:buf});f(L('Saved'));return}catch(e){if(e&&e.code==='declined')return}}
   preview();
 };
 render();
