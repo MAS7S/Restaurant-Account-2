@@ -1,8 +1,11 @@
 # Restaurant Accounts
 
 The owner grants manager access by verified email. Each manager has one
-restaurant and can grant or revoke worker access for that restaurant. Workers
-share that restaurant's ledger.
+restaurant. Previously activated workers can continue to share that restaurant’s
+ledger, and managers can revoke their access. New invitations are for managers.
+
+On first access, users choose a display name, and owners and managers name any
+unnamed restaurant ledger. To change a name later, select it in the header.
 
 ## Connect Firebase
 
@@ -61,5 +64,10 @@ The Hosting workflow deploys the website. Deploy the blocking functions
 separately with Firebase project credentials. Verify that the existing owner
 can sign in, a pending invitation can be claimed, and a new, uninvited email
 is rejected before it appears in Authentication → Users. Existing Auth records
-are retained. Reinviting a revoked user allows the approved email to sign in
-and claim the new invitation.
+are retained. Reinviting a revoked manager allows that email to sign in and claim the new
+invitation.
+
+Deploy the Firestore rules before publishing the interface so the name form can
+read and write the signed-in account’s profile. If the blocking functions are
+already active, redeploy them to reject older unclaimed worker invitations at
+the Authentication layer.

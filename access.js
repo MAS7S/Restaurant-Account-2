@@ -22,10 +22,13 @@ const strings = {
   invitationRequired: ['Ask for an invitation before signing in.', 'اطلب دعوة قبل تسجيل الدخول.'],
   waiting: ['Access has not been approved for this email.', 'لم تتم الموافقة على هذا البريد الإلكتروني.'],
   grant: ['Grant access', 'منح الصلاحية'],
-  add: ['Add worker', 'إضافة عامل'],
   users: ['Users', 'المستخدمون'],
   editName: ['Edit display name', 'تعديل اسم العرض'],
-  displayName: ['Display name', 'اسم العرض'],
+  displayName: ['Your name', 'اسمك'],
+  restaurantName: ['Restaurant name', 'اسم المطعم'],
+  editRestaurant: ['Edit restaurant name', 'تعديل اسم المطعم'],
+  nameSetup: ['Choose your names', 'أدخل الأسماء'],
+  saveNames: ['Save', 'حفظ'],
   invalidName: ['Enter a name of up to 80 characters.', 'أدخل اسمًا لا يزيد عن ٨٠ حرفًا.'],
   logout: ['Sign out', 'تسجيل الخروج'],
   invitee: ['Invitee’s email address', 'البريد الإلكتروني للمدعو'],
@@ -71,10 +74,12 @@ let generation = 0;
 let message = '';
 let failure = false;
 let view;
+let profileName = '';
 const t = key => strings[key][arabic ? 1 : 0];
 const $ = id => document.getElementById(id);
 const toggleLabel = () => arabic ? 'English' : 'العربية';
 const accessRef = key => dbApi.doc(db, 'access', key);
+const profileRef = uid => dbApi.doc(db, 'profiles', uid);
 const emailKey = email => email.trim().toLowerCase();
 const validEmail = email => email.length <= 254 && /^[^@/ ]+@[^@/ ]+\.[^@/ ]+$/.test(email);
 
@@ -102,14 +107,14 @@ function render() {
   ledger.hidden = !signedIn;
   if (signedIn) {
     bar.innerHTML = `<span class="dot" aria-hidden="true"></span><nav>
-      ${role !== 'worker' ? `<button class="outline" data-action="grant">${icons.grant}${t(role === 'owner' ? 'grant' : 'add')}</button>
-      <button class="outline" data-action="users">${icons.users}${t('users')}</button>` : ''}
+      ${role === 'owner' ? `<button class="outline" data-action="grant">${icons.grant}${t('grant')}</button>` : ''}
+      ${role !== 'worker' ? `<button class="outline" data-action="users">${icons.users}${t('users')}</button>` : ''}
       <button class="outline" data-action="logout">${icons.logout}${t('logout')}</button>
       <button class="outline" data-action="language">${icons.language}${toggleLabel()}</button>
       </nav><button type="button" id="signed-in-name" data-action="edit-name" title="${t('editName')}"></button><p class="message" id="access-message" role="status"></p>
       ${importLocal ? `<button class="outline" data-action="import">${t('importLocal')}</button>` : ''}
       <button class="outline" id="retry-save" data-action="retry" hidden>${t('retry')}</button>`;
-    $('signed-in-name').textContent = user.displayName || user.email;
+    $('signed-in-name').textContent = profileName || user.displayName || user.email;
   } else {
     screen.innerHTML = `<article><div class="spread"><strong class="brand app-brand"><img src="./icons/app-192.png" width="28" height="28" alt="">Restaurant Accounts</strong>
       <button class="outline" data-action="language">${toggleLabel()}</button></div><h1>${t('signIn')}</h1>
@@ -147,6 +152,7 @@ async function connect(current) {
   dialog.close();
   window.restaurantAccounts.close();
   user = current;
+  profileName = '';
   role = restaurant = null;
   importLocal = null;
   if (!user) return setStage('login');
@@ -159,21 +165,30 @@ async function connect(current) {
     if (current.uid !== ownerUid) {
       const ref = accessRef(key);
       const grant = (await dbApi.getDocFromServer(ref)).data();
-      if (!grant || grant.state === 'revoked' || (grant.state === 'active' && grant.uid !== current.uid)) {
+      const canClaim = grant?.role === 'manager' && grant.state === 'pending';
+      const hasGrant = grant?.state === 'active' && grant.uid === current.uid;
+      if (!canClaim && !hasGrant) {
         if (id === generation) setStage('waiting');
         return;
       }
-      if (grant.state === 'pending') await dbApi.updateDoc(ref, { state: 'active', uid: current.uid });
+      if (canClaim) await dbApi.updateDoc(ref, { state: 'active', uid: current.uid });
       nextRole = grant.role;
       nextRestaurant = grant.restaurant;
     }
     const ref = dbApi.doc(db, 'restaurants', nextRestaurant);
-    const snapshot = await dbApi.getDocFromServer(ref);
+    const [snapshot, profile] = await Promise.all([
+      dbApi.getDocFromServer(ref),
+      dbApi.getDocFromServer(profileRef(current.uid)).catch(() => null)
+    ]);
     if (id !== generation) return;
+    profileName = profile?.data()?.name || '';
     role = nextRole;
     restaurant = nextRestaurant;
     openLedger(ref, snapshot, id);
     setStage('ready');
+    const needsName = profile !== null && !profileName;
+    const needsRestaurant = role !== 'worker' && !window.restaurantAccounts.restaurantName();
+    if (needsName || needsRestaurant) openNameDialog('nameSetup', needsName, needsRestaurant);
   } catch {
     if (id === generation) setStage('waiting', 'failure');
   }
@@ -259,10 +274,27 @@ function openLedger(ref, snapshot, id) {
 
 const currentUser = () => auth.currentUser;
 
+function openNameDialog(title, showProfile, showRestaurant) {
+  dialog.innerHTML = `<h2 id="access-dialog-title">${t(title)}</h2>
+    <form id="name-form" class="name-form">
+      ${showProfile ? `<label for="profile-name">${t('displayName')}</label>
+        <input id="profile-name" autocomplete="name" maxlength="80" required>` : ''}
+      ${showRestaurant ? `<label for="restaurant-name">${t('restaurantName')}</label>
+        <input id="restaurant-name" maxlength="80" required>` : ''}
+      <p class="message" id="dialog-message" role="status"></p>
+      <button type="submit" class="primary">${t('saveNames')}</button>
+    </form>
+    <footer class="dialog-footer"><button type="button" class="outline" data-action="close">${t('close')}</button></footer>`;
+  if (showProfile) $('profile-name').value = (profileName || user.displayName || '').slice(0, 80);
+  if (showRestaurant) $('restaurant-name').value = window.restaurantAccounts.restaurantName().slice(0, 80);
+  dialog.setAttribute('aria-labelledby', 'access-dialog-title');
+  if (!dialog.open) dialog.showModal();
+}
+
 async function openDialog(kind) {
   view = kind;
   const isGrant = kind === 'grant';
-  dialog.innerHTML = `<h2 id="access-dialog-title">${t(isGrant && role === 'manager' ? 'add' : kind)}</h2>
+  dialog.innerHTML = `<h2 id="access-dialog-title">${t(kind)}</h2>
     ${isGrant ? `<form id="invite-form"><label for="invite-email"><strong>${t('invitee')}</strong></label>
     <input id="invite-email" type="email" dir="ltr" maxlength="254" required>
     <p>${t('approved')}</p><button class="primary" type="submit">${t('approve')}</button></form>` : ''}
@@ -329,7 +361,7 @@ async function loadUsers() {
 }
 
 document.addEventListener('submit', async event => {
-  if (!['login-form', 'invite-form'].includes(event.target.id)) return;
+  if (!['login-form', 'invite-form', 'name-form'].includes(event.target.id)) return;
   event.preventDefault();
   const button = event.submitter;
   if (button) button.disabled = true;
@@ -346,6 +378,27 @@ document.addEventListener('submit', async event => {
       }
       return;
     }
+    if (event.target.id === 'name-form') {
+      if (stage !== 'ready') return;
+      const id = generation;
+      const name = $('profile-name')?.value.trim();
+      const restaurantName = $('restaurant-name')?.value.trim();
+      const status = $('dialog-message');
+      if ([name, restaurantName].some(value => value !== undefined && (!value || value.length > 80))) {
+        status.textContent = t('invalidName');
+        return;
+      }
+      if (name && name !== profileName) {
+        await dbApi.setDoc(profileRef(user.uid), { name });
+        if (id !== generation) return;
+        profileName = name;
+        $('signed-in-name').textContent = name;
+      }
+      if (restaurantName) window.restaurantAccounts.setRestaurantName(restaurantName);
+      if (event.target.isConnected) dialog.close();
+      return;
+    }
+    if (role !== 'owner') return;
     const field = $('invite-email');
     const key = emailKey(field.value);
     const status = $('dialog-message');
@@ -355,13 +408,13 @@ document.addEventListener('submit', async event => {
       return;
     }
     const ref = accessRef(key);
-    const invite = { role: role === 'owner' ? 'manager' : 'worker', restaurant: role === 'owner' ? key : restaurant, state: 'pending', uid: '' };
+    const invite = { role: 'manager', restaurant: key, state: 'pending', uid: '' };
     await dbApi.setDoc(ref, invite);
     field.value = '';
     await loadUsers();
   } catch (error) {
-    if (event.target.id === 'invite-form') {
-      const status = $('dialog-message');
+    if (event.target.id !== 'login-form') {
+      const status = event.target.querySelector('#dialog-message') || (event.target.isConnected && $('dialog-message'));
       if (status) status.textContent = t('failure');
     } else {
       setMessage(signInError(error), true);
@@ -392,24 +445,12 @@ document.addEventListener('click', async event => {
         setMessage('reset');
         break;
       }
-      case 'edit-name': {
-        const account = currentUser();
-        if (!account || stage !== 'ready') break;
-        const text = window.prompt(t('displayName'), account.displayName || '');
-        if (text === null) break;
-        const name = text.trim();
-        if (!name || name.length > 80) {
-          setMessage('invalidName', true);
-          break;
-        }
-        if (name === account.displayName) break;
-        await authApi.updateProfile(account, { displayName: name });
-        if (currentUser()?.uid === account.uid && stage === 'ready') {
-          $('signed-in-name').textContent = name;
-          setMessage('');
-        }
+      case 'edit-name':
+        if (stage === 'ready') openNameDialog('editName', true, false);
         break;
-      }
+      case 'edit-restaurant':
+        if (stage === 'ready') openNameDialog('editRestaurant', false, true);
+        break;
       case 'logout':
         if (stage === 'ready' && await flushLedger?.() === false) break;
         await authApi.signOut(auth);
@@ -424,6 +465,8 @@ document.addEventListener('click', async event => {
         setMessage('sent');
         break;
       case 'grant':
+        if (role === 'owner') await openDialog('grant');
+        break;
       case 'users':
         if (role === 'owner' || role === 'manager') await openDialog(button.dataset.action);
         break;

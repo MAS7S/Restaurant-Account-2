@@ -156,3 +156,7 @@
 .install-app p { margin: 8px 0; }
 .install-app .primary { width: auto; }
 @media (display-mode: standalone) { .install-app { display: none; } }
+
+.name-form { display: grid; gap: 8px; }
+.name-form label { font-weight: 700; }
+.name-form .primary { margin-top: 8px; }
