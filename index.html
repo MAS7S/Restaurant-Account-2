@@ -82,10 +82,9 @@ h3{margin:0 0 8px;font-size:15px}
 <section class="access-ui access-bar" id="access-bar" hidden></section>
 <dialog class="access-ui dialog" id="access-dialog"></dialog>
 <div id="accounts-app" hidden>
-<header class="ban"><div class="bn"><button type="button" id="bn">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
+<header class="ban"><div class="bn"><button type="button" id="bn" data-action="edit-restaurant">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
 <main>
 <section class="card">
-<label for="nm" data-i18n="Restaurant name">Restaurant name</label><input id="nm" placeholder="Restaurant name" data-placeholder="Restaurant name">
 <label for="wk" data-i18n="Week starts">Week starts</label><input id="wk" type="date">
 <label for="cu" data-i18n="Currency">Currency</label><input id="cu" placeholder="$">
 </section>
@@ -207,6 +206,13 @@ window.restaurantAccounts={
     render();
   },
   save,
+  restaurantName:()=>S.name,
+  setRestaurantName(name){
+    if(!persistLedger||S.name===name)return;
+    S.name=name;
+    head();
+    save();
+  },
   close(){
     persistLedger=null;
     viewWeek=null;
@@ -298,7 +304,6 @@ function render(){
   $('week-range').textContent=weekLabel(current);
   head();
   $('wk').value=current;
-  $('nm').value=S.name;
   $('cu').value=S.cur;
   drawDays();
   totals();
@@ -328,7 +333,6 @@ function closeM(){
 const onIn=e=>{
   if(!persistLedger)return;
   const t=e.target;
-  if(t.id==='nm'){S.name=t.value;head();save();return}
   if(t.id==='cu'){S.cur=t.value;drawDays();totals();save();return}
   if(t.id==='wk'){changeCurrentWeek(t.value);return}
   if(t.dataset.j!=null&&MI>=0){const o=day(dates()[MI]);if(o.exp[+t.dataset.j]){o.exp[+t.dataset.j][t.dataset.f]=t.value;save();upd(MI);mtot()}return}
@@ -344,7 +348,6 @@ document.addEventListener('click',e=>{
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
 $('md').onclick=e=>{if(e.target===$('md'))closeM()};
-$('bn').onclick=()=>{$('nm').focus();$('nm').select()};
 $('nx').onclick=()=>changeCurrentWeek(addD(S.week,7));
 $('older').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())-1])};
 $('newer').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())+1])};

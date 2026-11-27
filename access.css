@@ -144,3 +144,7 @@
 .access-ui .message { margin: 8px 0 0; overflow-wrap: anywhere; }
 .access-ui .message:empty { display: none; }
 .access-ui .message[data-error] { color: #90382f; }
+
+.name-form { display: grid; gap: 8px; }
+.name-form label { font-weight: 700; }
+.name-form .primary { margin-top: 8px; }

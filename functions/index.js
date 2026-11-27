@@ -21,7 +21,7 @@ async function requireInvitation({ data: user }) {
 
   const grants = db.collection('access');
   const grant = (await grants.doc(email).get()).data();
-  const pending = grant?.state === 'pending' && grant.uid === '';
+  const pending = grant?.role === 'manager' && grant.state === 'pending' && grant.uid === '';
   const active = grant?.state === 'active' && grant.uid === user.uid;
   if (!pending && !active) denyInvitation();
 
