@@ -147,7 +147,7 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
 .employee-totals{display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:0;margin-top:12px;background:#dce8e0;overflow:hidden}
 .employee-totals span{padding:10px;background:#f2f8f4;font-size:.78rem}
 .employee-totals bdi{display:block;font-size:1.16rem;margin-top:3px}
-.employee-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.employee-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 .employee-actions button{font-size:.82rem;padding-inline:5px;line-height:1.2}
 .worker-pay-actions{display:grid;grid-template-columns:1fr;gap:8px}
 .worker-pay-actions .pay-amount{font-size:1.35rem;font-weight:750;color:#0b6145}
@@ -231,6 +231,12 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
   .shift-date .shift-off{margin:0;margin-inline-start:auto}
   .access-ui .shift-time{min-height:35px;padding:3px 5px;font-size:.78rem}
 }
+.payment-date-options{border:1px solid #dce8e0;border-radius:9px;padding:8px 10px}
+.payment-date-options summary{cursor:pointer;color:#0b6145;font-weight:650}
+.payment-date-options input{margin-top:7px}
+#ml .a{touch-action:pan-y}
+.expense-swipe-hint{display:none;color:var(--mut);font-size:.77rem;margin:0 0 8px}
+@media(pointer:coarse){.expense-swipe-hint{display:block}}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -299,7 +305,7 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 </section>
 </main>
 </div>
-<div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button" data-i18n="Done">Done</button></div><div id="ml"></div><button class="add" id="ma" type="button" data-i18n="+ Add expense">+ Add expense</button><div class="mc"><div><span data-i18n="CASH EXPENSES">CASH EXPENSES</span><b id="mc"></b></div><div><span data-i18n="CREDIT EXPENSES">CREDIT EXPENSES</span><b id="mk"></b></div></div></div></div>
+<div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button" data-i18n="Done">Done</button></div><p class="expense-swipe-hint" data-i18n="Swipe an amount right to delete or left to edit.">Swipe an amount right to delete or left to edit.</p><div id="ml"></div><button class="add" id="ma" type="button" data-i18n="+ Add expense">+ Add expense</button><div class="mc"><div><span data-i18n="CASH EXPENSES">CASH EXPENSES</span><b id="mc"></b></div><div><span data-i18n="CREDIT EXPENSES">CREDIT EXPENSES</span><b id="mk"></b></div></div></div></div>
 <dialog class="access-ui dialog" id="salary-dialog" aria-labelledby="salary-title">
   <h2 id="salary-title" data-i18n="Weekly salaries">Weekly salaries</h2>
   <p id="salary-period"></p>
@@ -381,12 +387,15 @@ const translations = {
   'Cash net':'صافي النقدي', 'Credit net':'صافي الآجل', 'Daily details':'التفاصيل اليومية',
   Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
   'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
-  Employees:'الموظفون', Schedule:'الجدول', 'Salary history':'سجل الرواتب', 'Add hours':'إضافة ساعات',
+  Employees:'الموظفون', Schedule:'الجدول', 'Salary history':'سجل الرواتب',
   'Enter the hourly rate to set shifts.':'اكتب أجر الساعة لعرض أيام الدوام.',
-  'Payment date':'تاريخ دفع الراتب', 'Mark as paid':'سجّل استلام الراتب',
+  'Payment date':'تاريخ دفع الراتب',
+  'Choose payment date':'تحديد تاريخ الدفعة',
+  'Swipe an amount right to delete or left to edit.':'اسحب المبلغ يمينًا للحذف أو يسارًا للتعديل.',
+  'Delete this expense?':'هل تريد حذف هذا المصروف؟', 'Mark as paid':'سجّل استلام الراتب',
   'Payment recorded':'الراتب مسجّل', 'Update payment':'حدّث الدفعة',
-  'Edit name':'تعديل الاسم', Hours:'الساعات', Minutes:'الدقائق', 'Save hours':'حفظ الساعات',
-  'Hours saved.':'تم حفظ الساعات.', 'Manual hours':'ساعات مُدخلة يدويًا',
+  'Edit name':'تعديل الاسم', Hours:'الساعات',
+  'Manual hours':'ساعات مُدخلة يدويًا',
   'No recorded salaries.':'لا توجد رواتب مسجّلة.', 'Worker name already exists.':'اسم الموظف موجود بالفعل.',
   'Add worker':'أضف عاملًا', 'Work schedule':'جدول الساعات',
   'No workers added yet.':'لم تُضف أي عامل بعد.', 'Remove worker':'حذف العامل',
@@ -722,29 +731,21 @@ function renderWorkers(){
   const index=S.workers.indexOf(worker);
   const {minutes,cents}=scheduleTotals(worker);
   const existing=payrollEntry(worker);
-  const tabs=[['pay','Weekly salary'],['history','Salary history'],['hours','Add hours']];
+  const tabs=[['pay','Weekly salary'],['history','Salary history']];
   const body={
     pay:()=>`<form class="employee-panel" data-worker-pay="${index}">
       <label for="worker-pay-${index}">${L('Weekly salary')}</label>
       <div class="worker-pay-actions">
         <input id="worker-pay-${index}" class="pay-amount" name="amount" type="number" min="0.01" max="999999999" step="0.01" inputmode="decimal" value="${esc(existing?.entry.a||(cents>0?(cents/100).toFixed(2):''))}" required>
-        <label for="worker-pay-date">${L('Payment date')}</label>
-        <input id="worker-pay-date" type="date" name="date" value="${existing?.date||iso(new Date())}" required>
-        ${existing?`<p class="paid-status">${L('Payment recorded')}</p>`:''}
-        <button type="submit" class="primary">${L(existing?'Update payment':'Mark as paid')}</button>
+        <details class="payment-date-options">
+          <summary>${L('Choose payment date')}</summary>
+          <input id="worker-pay-date" aria-label="${L('Payment date')}" type="date" name="date" value="${existing?.date||iso(new Date())}" required>
+        </details>
+        ${existing?`<p class="paid-status">${L('Payment recorded')} · ${parse(existing.date).toLocaleDateString(locale(),{dateStyle:'medium'})}</p>`:''}
+        <button type="submit" class="primary"${existing?' hidden':''}>${L(existing?'Update payment':'Mark as paid')}</button>
       </div>
     </form>`,
     history:()=>salaryHistory(worker),
-    hours:()=>`<form class="employee-panel" id="manual-hours-form">
-      <label for="hours-date">${L('Date')}</label>
-      <select name="date" id="hours-date">${dates(staffDate()).map(date=>`<option value="${date}">${dn(date)} · ${sd(date)}</option>`).join('')}</select>
-      <div class="shift-times">
-        <label>${L('Hours')}<input name="hours" type="number" min="0" max="23" value="0" required></label>
-        <label>${L('Minutes')}<input name="minutes" type="number" min="0" max="59" value="0" required></label>
-      </div>
-      <p class="message" id="hours-message" role="status"></p>
-      <button type="submit" class="primary">${L('Save hours')}</button>
-    </form>`,
     rename:()=>`<form class="employee-panel" id="rename-worker-form">
       <label for="rename-worker">${L('Worker name')}</label>
       <input id="rename-worker" name="worker" maxlength="80" value="${esc(worker)}" required>
@@ -770,7 +771,6 @@ function renderWorkers(){
       data-employee-panel="${panel}" aria-pressed="${employeePanel===panel}">${L(label)}</button>`).join('')}</div>
     ${body[employeePanel]()}
   </section>`;
-  if(employeePanel==='hours')$('hours-date').dispatchEvent(new Event('change',{bubbles:true}));
 }
 
 function salaryHistory(worker){
@@ -900,33 +900,30 @@ $('workforce-list').addEventListener('click',event=>{
     renderWorkers();
   }
 });
-$('workforce-list').addEventListener('change',event=>{
-  if(event.target.id!=='hours-date')return;
-  const form=event.target.form;
-  const minutes=shiftMinutes(workerSchedule(selectedEmployee)?.shifts[event.target.value]);
-  form.elements.hours.value=Math.floor(minutes/60);
-  form.elements.minutes.value=minutes%60;
-  $('hours-message').textContent='';
-});
+function refreshPaymentAction(event){
+  const form=event.target.closest('[data-worker-pay]');
+  if(!form)return;
+  const payment=payrollEntry(selectedEmployee);
+  if(!payment)return;
+  const amount=wageValue(form.elements.amount.value);
+  const date=form.elements.date.value;
+  form.querySelector('[type="submit"]').hidden=!validDate(date)||Number(amount)<=0
+    || (Number(amount)===Number(payment.entry.a)&&date===payment.date);
+}
+$('workforce-list').addEventListener('input',refreshPaymentAction);
+$('workforce-list').addEventListener('change',refreshPaymentAction);
 $('workforce-list').addEventListener('submit',event=>{
   const form=event.target;
   event.preventDefault();
   if(!persistLedger||!S.workers.includes(selectedEmployee))return;
-  if(form.id==='manual-hours-form'){
-    const date=form.elements.date.value;
-    const minutes=Number(form.elements.hours.value)*60+Number(form.elements.minutes.value);
-    if(!dates(staffDate()).includes(date)||!Number.isInteger(minutes)||minutes<0||minutes>=1440)return;
-    editableSchedule(selectedEmployee).shifts[date]={minutes};
-    save();
-    renderWorkers();
-    $('hours-date').value=date;
-    $('hours-date').dispatchEvent(new Event('change',{bubbles:true}));
-    $('workforce-list').querySelector('#hours-message').textContent=L('Hours saved.');
-    return;
-  }
   if(form.id==='rename-worker-form'){
     const name=workerName(form.elements.worker.value);
-    if(!name||name===selectedEmployee)return;
+    if(!name)return;
+    if(name===selectedEmployee){
+      employeePanel='pay';
+      renderWorkers();
+      return;
+    }
     const taken=[...S.workers,...S.removedWorkers].some(worker=>
       worker!==selectedEmployee&&worker.toLowerCase()===name.toLowerCase());
     if(taken){
@@ -940,6 +937,7 @@ $('workforce-list').addEventListener('submit',event=>{
     }
     if(scheduleWorker===selectedEmployee)scheduleWorker=name;
     selectedEmployee=name;
+    employeePanel='pay';
     save();
     renderWorkers();
     totals();
@@ -953,6 +951,7 @@ $('workforce-list').addEventListener('submit',event=>{
   if(!validDate(date))return;
   const payment=payrollEntry(worker);
   if(payment){
+    if(Number(payment.entry.a)===Number(amount)&&payment.date===date)return;
     payment.entry.a=amount;
     if(payment.date!==date){
       const previous=S.days[payment.date].exp;
@@ -1076,6 +1075,43 @@ function closeM(){
   MI=-1;$('md').hidden=true;
   renderWorkers();
 }
+function removeExpense(index){
+  if(!persistLedger||MI<0)return;
+  const expenses=day(dates()[MI]).exp;
+  if(!expenses[index]||!confirm(L('Delete this expense?')))return;
+  expenses.splice(index,1);
+  save();
+  drawM();
+  upd(MI);
+  renderWorkers();
+}
+
+let expenseSwipe=null;
+$('ml').addEventListener('pointerdown',event=>{
+  const amount=event.target.closest('[data-f="a"]');
+  if(!amount||!event.isPrimary||event.button!==0||MI<0)return;
+  const index=Number(amount.dataset.j);
+  const expense=S.days[dates()[MI]]?.exp[index];
+  if(!expense)return;
+  expenseSwipe={pointer:event.pointerId,x:event.clientX,y:event.clientY,index,amount,expense};
+});
+document.addEventListener('pointercancel',event=>{
+  if(expenseSwipe?.pointer===event.pointerId)expenseSwipe=null;
+});
+document.addEventListener('pointerup',event=>{
+  if(expenseSwipe?.pointer!==event.pointerId)return;
+  const {x,y,index,amount,expense}=expenseSwipe;
+  expenseSwipe=null;
+  const dx=event.clientX-x,dy=event.clientY-y;
+  if(!persistLedger||MI<0||!amount.isConnected||S.days[dates()[MI]]?.exp[index]!==expense
+    ||Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.4)return;
+  if(dx>0)removeExpense(index);
+  else{
+    amount.focus();
+    amount.select();
+  }
+});
+
 const onIn=e=>{
   if(!persistLedger)return;
   const t=e.target;
@@ -1108,7 +1144,7 @@ document.addEventListener('click',e=>{
     $('salary-dialog').showModal();
   }
   else if(t.dataset.e!=null)openM(+t.dataset.e);
-  else if(t.dataset.dj!=null&&MI>=0){day(dates()[MI]).exp.splice(+t.dataset.dj,1);save();drawM();upd(MI)}
+  else if(t.dataset.dj!=null)removeExpense(Number(t.dataset.dj));
 });
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
