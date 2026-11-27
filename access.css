@@ -93,8 +93,11 @@
 .access-bar [data-action="users"] svg { color: #356148; }
 .access-bar [data-action="logout"] svg { color: #76513e; }
 .access-bar [data-action="language"] svg { color: #465e85; }
-#signed-in-name {
-  display: block;
+.edit-profile-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
   max-width: 100%;
   padding: 4px 8px;
   border: 0;
@@ -102,9 +105,13 @@
   color: inherit;
   font-weight: 700;
   text-align: start;
+  overflow-wrap: anywhere;
+}
+.edit-name-label {
+  color: var(--access-green);
+  font-size: .85em;
   text-decoration: underline;
   text-underline-offset: 3px;
-  overflow-wrap: anywhere;
 }
 
 .access-ui.dialog {
