@@ -155,3 +155,11 @@
 .name-form { display: grid; gap: 8px; }
 .name-form label { font-weight: 700; }
 .name-form .primary { margin-top: 8px; }
+
+.sign-in article {
+  border-color: #dce8e0;
+  box-shadow: 0 12px 30px #163c2920;
+}
+.access-bar { border-bottom-color: #dce8e0; }
+.access-bar nav { gap: 7px; }
+.access-bar nav .outline:hover { background: #edf5f0; }

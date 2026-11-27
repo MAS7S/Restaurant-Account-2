@@ -88,15 +88,7 @@ h3{margin:0 0 8px;font-size:15px}
 .salary-group ul{list-style:none;margin:7px 0 0;padding:0}
 .salary-group li{display:flex;justify-content:space-between;gap:8px;padding-block:3px;color:#496158}
 .salary-group bdi{overflow-wrap:anywhere}
-.timesheet-days{display:grid;gap:8px;margin-top:12px}
-.work-shift{min-width:0;margin:0;padding:8px;border:1px solid #e1e2dc;border-radius:10px}
-.work-shift legend{font-weight:700;padding-inline:4px}
-.access-ui .shift-off{display:flex;align-items:center;gap:6px;margin:0 0 5px}
-.access-ui .shift-off input{appearance:auto;width:18px;min-height:18px;margin:0;accent-color:#0b6145}
-.shift-times{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.shift-times output{grid-column:1/-1;text-align:end;font-weight:700}
-.shift-times input:disabled{opacity:.5}
-.timesheet-total{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding:10px;background:#e8f3ed;border-radius:10px}
+.shift-times{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ledger-layout{max-width:880px;margin-inline:auto;display:grid;grid-template-columns:176px minmax(0,1fr);gap:16px;padding-inline:12px}
 .ledger-layout main{width:100%;padding-inline:0}
 .staff-nav{position:sticky;top:12px;align-self:start;display:grid;gap:6px;margin-top:12px;padding:6px}
@@ -121,22 +113,124 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
 .employee-totals{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;background:#edf5f0;border-radius:9px;padding:9px;font-size:.9rem}
 .employee-totals bdi{font-weight:700}
 .employee-panel{display:grid;gap:8px}
-.worker-pay-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.worker-pay-actions input{grid-column:1/-1}
 .employee-history{list-style:none;padding:0;margin:0}
 .employee-history li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-block:9px;border-bottom:1px solid #e0e8e2}
 .access-ui .remove-worker{margin-top:16px;color:#a43a31;border-color:#ebd1cc;background:#fff4f0}
-.access-ui.timesheet{width:min(calc(100% - 24px),680px)}
-.timesheet .worker-chips{margin-top:0}
-.work-shift .shift-times{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(64px,.8fr);align-items:end}
-.work-shift .shift-times output{grid-column:auto;align-self:end;padding-bottom:8px;overflow-wrap:anywhere}
-.work-shift [data-manual-hours]{grid-column:1/-1;text-align:end;color:#50665b}
-@media(max-width:365px){
-  .work-shift .shift-times{grid-template-columns:1fr 1fr}
-  .work-shift .shift-times output{grid-column:1/-1;padding-bottom:0}
+.access-ui.timesheet{width:min(calc(100% - 18px),720px);padding:clamp(12px,3.5vw,24px)}
+.schedule-header,.employee-profile{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.schedule-header h2,.employee-profile h3{margin:0}
+.schedule-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:10px 12px;margin-block:12px;background:#f4f8f6;border-radius:12px}
+.schedule-controls label{margin:0;font-size:.8rem;font-weight:700}
+.schedule-controls input{min-height:40px;padding:6px 9px;margin-top:3px}
+.schedule-table{border:1px solid #dce8e0;border-radius:12px;overflow:hidden}
+.schedule-columns,.work-shift{display:grid;grid-template-columns:minmax(70px,1.2fr) repeat(2,minmax(51px,.88fr)) minmax(60px,1fr);gap:5px;align-items:center;padding:6px 8px}
+.schedule-columns{background:#e7f2ec;font-size:.75rem;font-weight:700}
+.schedule-columns span:not(:first-child){text-align:center}
+.work-shift{border-top:1px solid #edf1ee;min-height:55px}
+.work-shift:nth-child(even){background:#fafcfb}
+.shift-date strong,.shift-date small{display:block;line-height:1.2}
+.shift-date strong{font-size:.82rem}
+.shift-date small,.shift-result small{color:#52685c;font-size:.72rem}
+.access-ui .shift-off{display:inline-flex;align-items:center;gap:3px;margin:3px 0 0;font-size:.68rem}
+.access-ui .shift-off input{appearance:auto;width:13px;min-height:13px;margin:0;accent-color:#0b6145}
+.access-ui .shift-time{min-height:38px;padding:4px 2px;font-size:.84rem;font-variant-numeric:tabular-nums}
+.shift-result{text-align:center;font-size:.84rem;font-weight:750;overflow-wrap:anywhere}
+.shift-result small{display:block;font-weight:400}
+.shift-result [data-manual-hours]{font-size:.64rem}
+.timesheet-total{display:flex;justify-content:space-between;gap:8px;margin-top:10px;padding:11px 12px;background:#0b6145;color:white;border-radius:10px}
+.timesheet-total output{font-weight:700;font-variant-numeric:tabular-nums}
+.employee-profile h3{overflow-wrap:anywhere}
+.profile-icons{display:flex;gap:5px}
+.access-ui .icon-only{width:38px;min-height:38px;padding:6px;display:grid;place-items:center}
+.icon-only svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.access-ui .remove-worker{margin:0}
+.employee-totals{display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:0;margin-top:12px;background:#dce8e0;overflow:hidden}
+.employee-totals span{padding:10px;background:#f2f8f4;font-size:.78rem}
+.employee-totals bdi{display:block;font-size:1.16rem;margin-top:3px}
+.employee-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.employee-actions button{font-size:.82rem;padding-inline:5px;line-height:1.2}
+.worker-pay-actions{display:grid;grid-template-columns:1fr;gap:8px}
+.worker-pay-actions .pay-amount{font-size:1.35rem;font-weight:750;color:#0b6145}
+:root{
+  --bg:#edf3f0;--card:#fff;--inp:#fff;--row:#f5f8f6;--tx:#192f27;--mut:#52675d;
+  --bd:#d9e5de;--brand:#0b6145;--brand-soft:#e6f2eb;--danger:#983d35;
 }
-.timesheet-total{position:sticky;bottom:0}
-.timesheet-total output{font-weight:700}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12211e;--card:#1b2e28;--inp:#152621;--row:#20362e;--tx:#edf8f1;
+    --mut:#abc0b5;--bd:#344e42;--brand:#147759;--brand-soft:#25493b;--danger:#f1ada3;
+  }
+}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#accounts-app button,#accounts-app input,#accounts-app select{font-family:inherit}
+#accounts-app :is(button,input,select,summary):focus-visible{outline:2px solid #29ad81;outline-offset:2px}
+#accounts-app .ban{background:#123e32;border-radius:0;padding:clamp(19px,4vw,37px) 16px;color:#fff}
+#accounts-app .bn button{font-size:clamp(1.4rem,4vw,2.05rem);text-decoration:none}
+#accounts-app .bn button:hover{text-decoration:underline}
+#accounts-app .bt{font-size:.91rem;color:#cce5d9}
+.ledger-layout{max-width:1120px;gap:clamp(12px,3vw,28px)}
+.ledger-layout main{max-width:none;padding-block:14px 24px}
+.ledger-layout .card{border:1px solid var(--bd);border-radius:15px;box-shadow:none;padding:clamp(11px,2.5vw,18px);margin-bottom:12px}
+.ledger-layout input,.ledger-layout select{border-radius:9px;min-height:42px}
+.ledger-layout h3,.ledger-heading{font-size:.93rem;letter-spacing:0;margin:0 0 9px}
+.ledger-heading{color:var(--mut);margin:14px 0 10px}
+.ledger-layout .ledger-field-row button,.ledger-tools .primary-report{background:var(--brand);color:white}
+.ledger-layout .ledger-field-row button{min-height:42px}
+.ledger-settings{display:grid;gap:10px}
+.ledger-settings label{margin:0 0 4px;font-size:.76rem;color:var(--mut)}
+.ledger-settings #cu{max-width:170px}
+.staff-nav{padding:6px!important}
+.ledger-layout .staff-nav button{border-color:transparent;background:transparent}
+.ledger-layout .staff-nav button:hover{background:#e6f2eb}
+.ledger-layout .staff-nav{background:#fff}
+#wsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#wsum .sc{margin:0;padding:12px;border-color:var(--bd);border-radius:12px;background:var(--row);color:var(--tx)}
+#wsum .net{background:var(--brand-soft)}
+#wsum .ex .v,#wsum .ex .salary-summary{color:var(--danger)}
+#wsum .l{font-size:.73rem;letter-spacing:0;color:var(--mut)}
+#wsum .v{font-size:clamp(1.15rem,3vw,1.8rem);margin:4px 0 8px;text-align:start;overflow-wrap:anywhere}
+#wsum .two{gap:5px}
+#wsum .two div{background:var(--card);padding:6px 7px;border-radius:7px;min-width:0}
+#wsum .two span{font-size:.64rem;color:var(--mut);letter-spacing:0}
+#wsum .two b{font-size:.91rem;overflow-wrap:anywhere}
+#wsum .salary-summary{margin-top:7px;padding:6px 8px;border-color:var(--bd);font-size:.8rem;background:var(--card)}
+#wsum .salary-summary:hover{border-color:var(--brand)}
+#days{border:1px solid var(--bd);border-radius:14px;background:var(--card);overflow:hidden;margin-bottom:14px}
+#days .dr{border:0;border-bottom:1px solid var(--bd);border-radius:0;margin:0;padding:9px 12px;background:var(--card)}
+#days .dr:nth-child(even){background:var(--row)}
+#days .dr:last-child{border-bottom:0}
+#days .dh b{font-size:.9rem}
+#days .dh span,#days .g3 label{font-size:.73rem;letter-spacing:0;color:var(--mut)}
+#days .dt{font-size:.92rem}
+#days .g3 :is(input,button){height:40px;border-radius:9px}
+#days .eb{border:1px solid var(--bd);background:var(--inp);color:var(--danger)}
+#accounts-app .worker-pay-actions .paid-status{margin:0;color:#0b6145;font-weight:650}
+.access-ui .shift-time{min-width:0;padding:4px;font-variant-numeric:tabular-nums;cursor:pointer}
+.access-ui .shift-time:disabled{cursor:default}
+@media(min-width:850px){
+  .ledger-settings{grid-template-columns:1fr 1fr 85px;align-items:end}
+  #days .dr{display:grid;grid-template-columns:minmax(125px,.8fr) minmax(0,2fr);gap:10px;align-items:center}
+  #days .dh{display:grid;gap:3px;margin:0}
+}
+@media(max-width:560px){
+  #wsum{grid-template-columns:1fr}
+  #wsum .sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:3px 9px;align-items:center}
+  #wsum .sc .v{grid-row:2;margin:0}
+  #wsum .sc .two{grid-area:1/2/3/3}
+  #wsum .salary-summary{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .schedule-columns,.work-shift{
+    grid-template-columns:repeat(2,minmax(0,1fr)) minmax(57px,.62fr);
+    padding:4px 7px;
+    gap:4px 6px;
+  }
+  .schedule-columns span:first-child{display:none}
+  .work-shift{min-height:0}
+  .shift-date{grid-column:1/-1;display:flex;align-items:baseline;gap:5px;min-width:0}
+  .shift-date .shift-off{margin:0;margin-inline-start:auto}
+  .access-ui .shift-time{min-height:35px;padding:3px 5px;font-size:.78rem}
+}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -158,7 +252,7 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
   </button>
 </aside>
 <main>
-<section class="card">
+<section class="card ledger-settings">
 <form id="restaurant-title-form">
   <label for="restaurant-title" data-i18n="Restaurant name">Restaurant name</label>
   <div class="ledger-field-row">
@@ -174,10 +268,11 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
     <button type="submit" data-i18n="Start week">Start week</button>
   </div>
 </form>
-<label for="cu" data-i18n="Currency">Currency</label><input id="cu" placeholder="$">
+<div><label for="cu" data-i18n="Currency">Currency</label><input id="cu" placeholder="$"></div>
 </section>
-<div id="days"></div>
 <section class="card"><h3 data-i18n="Week total">Week total</h3><div id="wsum"></div></section>
+<h2 class="ledger-heading" data-i18n="Daily details">Daily details</h2>
+<div id="days"></div>
 <section class="card ledger-tools">
   <h3 data-i18n="Weeks">Weeks</h3>
   <label for="saved-weeks" data-i18n="Saved weeks">Saved weeks</label>
@@ -229,21 +324,31 @@ dialog.access-ui.staff-drawer{position:fixed;inset-block:0;inset-inline:0 auto;m
   <div id="workforce-list"></div>
 </dialog>
 <dialog class="access-ui dialog timesheet" id="timesheet" aria-labelledby="timesheet-title">
-  <h2 id="timesheet-title" data-i18n="Work schedule">Work schedule</h2>
+  <div class="schedule-header">
+    <h2 id="timesheet-title" data-i18n="Work schedule">Work schedule</h2>
+    <form method="dialog"><button class="outline" type="submit" data-i18n="Done">Done</button></form>
+  </div>
   <div id="schedule-workers" class="worker-chips"></div>
   <div id="schedule-editor">
+    <div class="schedule-controls">
+      <label for="schedule-week"><span data-i18n="Week starts">Week starts</span>
+        <input id="schedule-week" type="date" required></label>
+      <label for="hourly-rate"><span data-i18n="Hourly rate">Hourly rate</span>
+        <input id="hourly-rate" type="number" min="0" max="999999999" step="0.01" inputmode="decimal"></label>
+    </div>
     <p id="timesheet-worker"></p>
-    <label for="hourly-rate" data-i18n="Hourly rate">Hourly rate</label>
-    <input id="hourly-rate" type="number" min="0" max="999999999" step="0.01" inputmode="decimal">
-    <div id="timesheet-days" class="timesheet-days"></div>
-    <div class="timesheet-total">
-      <strong data-i18n="Week total">Week total</strong>
-      <output id="timesheet-total" dir="ltr"></output>
+    <p id="schedule-rate-hint" data-i18n="Enter the hourly rate to set shifts.">Enter the hourly rate to set shifts.</p>
+    <div id="schedule-grid" hidden>
+      <div class="schedule-table">
+        <div class="schedule-columns"><span data-i18n="Day">Day</span><span data-i18n="Start">Start</span><span data-i18n="End">End</span><span data-i18n="Hours">Hours</span></div>
+        <div id="timesheet-days"></div>
+      </div>
+      <div class="timesheet-total">
+        <strong data-i18n="Week total">Week total</strong>
+        <output id="timesheet-total" dir="ltr"></output>
+      </div>
     </div>
   </div>
-  <form method="dialog" class="dialog-footer">
-    <button class="outline" type="submit" data-i18n="Done">Done</button>
-  </form>
 </dialog>
 </div>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -277,6 +382,9 @@ const translations = {
   Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
   'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
   Employees:'الموظفون', Schedule:'الجدول', 'Salary history':'سجل الرواتب', 'Add hours':'إضافة ساعات',
+  'Enter the hourly rate to set shifts.':'اكتب أجر الساعة لعرض أيام الدوام.',
+  'Payment date':'تاريخ دفع الراتب', 'Mark as paid':'سجّل استلام الراتب',
+  'Payment recorded':'الراتب مسجّل', 'Update payment':'حدّث الدفعة',
   'Edit name':'تعديل الاسم', Hours:'الساعات', Minutes:'الدقائق', 'Save hours':'حفظ الساعات',
   'Hours saved.':'تم حفظ الساعات.', 'Manual hours':'ساعات مُدخلة يدويًا',
   'No recorded salaries.':'لا توجد رواتب مسجّلة.', 'Worker name already exists.':'اسم الموظف موجود بالفعل.',
@@ -284,7 +392,6 @@ const translations = {
   'No workers added yet.':'لم تُضف أي عامل بعد.', 'Remove worker':'حذف العامل',
   'Remove this worker from the list? Saved hours and salaries will be kept.':'هل تريد حذف العامل من القائمة؟ ستبقى الساعات والرواتب المحفوظة.',
   'Suggested salary':'الراتب المقترح', 'Weekly salary':'الراتب الأسبوعي',
-  'Use suggested amount':'استخدم المبلغ المقترح', 'Record salary':'سجّل الراتب', 'Update salary':'حدّث الراتب',
   'This worker already has a manual salary expense this week. Record another salary?':'لهذا العامل راتب مسجّل يدويًا هذا الأسبوع. هل تريد تسجيل راتب آخر؟',
   'Hourly rate':'أجر الساعة', 'Day off':'يوم إجازة', Start:'الدخول', End:'الخروج',
   'Weekly salaries':'رواتب الأسبوع', 'Worker name':'اسم العامل', 'Select worker':'اختر العامل',
@@ -307,7 +414,9 @@ function monday(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));r
 const emptyLedger=()=>({name:'',cur:'$',week:monday(),savedWeeks:[],workers:[],removedWorkers:[],timesheets:[],days:{}});
 let S=emptyLedger();
 let viewWeek=null;
+let staffWeek=null;
 const selectedWeek=()=>viewWeek||S.week;
+const staffDate=()=>staffWeek||selectedWeek();
 let persistLedger=null;
 const save=()=>persistLedger?.(JSON.stringify(S));
 
@@ -382,7 +491,7 @@ function normalizeLedger(data){
           n:typeof e.n==='string'?e.n:'',
           ...(e.c===SALARIES&&workerName(e.worker)?{worker:restoreWorker(e.worker)}:{}),
           ...(e.c===SALARIES&&workerName(e.worker)&&validDate(e.payrollWeek)
-            &&dates(e.payrollWeek).includes(date)?{payrollWeek:e.payrollWeek}:{}),
+            ?{payrollWeek:e.payrollWeek}:{}),
           t:e.t==='credit'?'credit':'cash'
         }))
       };
@@ -414,6 +523,7 @@ window.restaurantAccounts={
   close(){
     persistLedger=null;
     viewWeek=null;
+    staffWeek=null;
     MI=-1;
     $('md').hidden=true;
     $('ml').replaceChildren();
@@ -453,6 +563,7 @@ function weekLabel(week){
   return sd(week)+' – '+parse(end).toLocaleDateString(locale(),{month:'short',day:'numeric',year:'numeric'});
 }
 function showWeek(week){
+  staffWeek=null;
   viewWeek=week===S.week?null:week;
   render();
 }
@@ -558,10 +669,10 @@ function render(){
 
 let scheduleWorker='';
 
-function workerSchedule(worker,week=selectedWeek()){
+function workerSchedule(worker,week=staffDate()){
   return S.timesheets.find(sheet=>sheet.worker===worker&&sheet.week===week);
 }
-function defaultRate(worker,week=selectedWeek()){
+function defaultRate(worker,week=staffDate()){
   const prior=S.timesheets.filter(sheet=>sheet.worker===worker&&sheet.week<week&&sheet.rate!=='');
   return prior.sort((a,b)=>b.week.localeCompare(a.week))[0]?.rate||'';
 }
@@ -576,7 +687,7 @@ const hoursLabel=minutes=>Math.floor(minutes/60)+':'+pad(minutes%60);
 function scheduleTotals(worker){
   const sheet=workerSchedule(worker);
   const rate=Number(sheet?.rate??defaultRate(worker));
-  const days=dates().map(date=>{
+  const days=dates(staffDate()).map(date=>{
     const minutes=shiftMinutes(sheet?.shifts[date]);
     return {date,minutes,cents:Math.round(minutes*rate*100/60)};
   });
@@ -584,10 +695,10 @@ function scheduleTotals(worker){
     cents:days.reduce((sum,day)=>sum+day.cents,0)};
 }
 function payrollEntry(worker){
-  for(const record of Object.values(S.days)){
+  for(const [date,record] of Object.entries(S.days)){
     const entry=record.exp.find(expense=>expense.c===SALARIES
-      && expense.worker===worker&&expense.payrollWeek===selectedWeek());
-    if(entry)return entry;
+      && expense.worker===worker&&expense.payrollWeek===staffDate());
+    if(entry)return {entry,date};
   }
 }
 
@@ -602,7 +713,7 @@ function renderWorkers(){
   if(!$('employees-dialog').open)return;
   if(!S.workers.includes(selectedEmployee))selectedEmployee=S.workers[0]||'';
   $('employee-list').innerHTML=workerChips(selectedEmployee);
-  $('employee-period').textContent=weekLabel(selectedWeek());
+  $('employee-period').textContent=weekLabel(staffDate());
   if(!selectedEmployee){
     $('workforce-list').innerHTML='<p>'+L('No workers added yet.')+'</p>';
     return;
@@ -611,20 +722,22 @@ function renderWorkers(){
   const index=S.workers.indexOf(worker);
   const {minutes,cents}=scheduleTotals(worker);
   const existing=payrollEntry(worker);
-  const tabs=[['pay','Weekly salary'],['history','Salary history'],['hours','Add hours'],['rename','Edit name']];
+  const tabs=[['pay','Weekly salary'],['history','Salary history'],['hours','Add hours']];
   const body={
     pay:()=>`<form class="employee-panel" data-worker-pay="${index}">
       <label for="worker-pay-${index}">${L('Weekly salary')}</label>
       <div class="worker-pay-actions">
-        <input id="worker-pay-${index}" name="amount" type="number" min="0.01" max="999999999" step="0.01" inputmode="decimal" value="${esc(existing?.a||'')}" required>
-        <button type="button" class="outline" data-use-suggestion>${L('Use suggested amount')}</button>
-        <button type="submit" class="primary">${L(existing?'Update salary':'Record salary')}</button>
+        <input id="worker-pay-${index}" class="pay-amount" name="amount" type="number" min="0.01" max="999999999" step="0.01" inputmode="decimal" value="${esc(existing?.entry.a||(cents>0?(cents/100).toFixed(2):''))}" required>
+        <label for="worker-pay-date">${L('Payment date')}</label>
+        <input id="worker-pay-date" type="date" name="date" value="${existing?.date||iso(new Date())}" required>
+        ${existing?`<p class="paid-status">${L('Payment recorded')}</p>`:''}
+        <button type="submit" class="primary">${L(existing?'Update payment':'Mark as paid')}</button>
       </div>
     </form>`,
     history:()=>salaryHistory(worker),
     hours:()=>`<form class="employee-panel" id="manual-hours-form">
       <label for="hours-date">${L('Date')}</label>
-      <select name="date" id="hours-date">${dates().map(date=>`<option value="${date}">${dn(date)} · ${sd(date)}</option>`).join('')}</select>
+      <select name="date" id="hours-date">${dates(staffDate()).map(date=>`<option value="${date}">${dn(date)} · ${sd(date)}</option>`).join('')}</select>
       <div class="shift-times">
         <label>${L('Hours')}<input name="hours" type="number" min="0" max="23" value="0" required></label>
         <label>${L('Minutes')}<input name="minutes" type="number" min="0" max="59" value="0" required></label>
@@ -640,13 +753,22 @@ function renderWorkers(){
     </form>`
   };
   $('workforce-list').innerHTML=`<section class="employee-card">
-    <h3><bdi>${esc(worker)}</bdi></h3>
+    <div class="employee-profile">
+      <h3><bdi>${esc(worker)}</bdi></h3>
+      <div class="profile-icons">
+        <button class="outline icon-only" type="button" data-employee-panel="rename" title="${L('Edit name')}" aria-label="${L('Edit name')}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-.8L20 7l-3.2-3.2L4.8 16zM14.8 5.8L18 9"/></svg>
+        </button>
+        <button class="outline icon-only remove-worker" type="button" data-remove-worker="${index}" title="${L('Remove worker')}" aria-label="${L('Remove worker')}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M8 7V4h8v3m2 0-1 13H7L6 7"/></svg>
+        </button>
+      </div>
+    </div>
     <div class="employee-totals"><span>${L('Week total')} <bdi>${hoursLabel(minutes)}</bdi></span>
       <span>${L('Suggested salary')} <bdi>${esc(money(cents/100))}</bdi></span></div>
     <div class="employee-actions">${tabs.map(([panel,label])=>`<button class="outline" type="button"
       data-employee-panel="${panel}" aria-pressed="${employeePanel===panel}">${L(label)}</button>`).join('')}</div>
     ${body[employeePanel]()}
-    <button type="button" class="outline remove-worker" data-remove-worker="${index}">${L('Remove worker')}</button>
   </section>`;
   if(employeePanel==='hours')$('hours-date').dispatchEvent(new Event('change',{bubbles:true}));
 }
@@ -664,7 +786,7 @@ function salaryHistory(worker){
 function editableSchedule(worker){
   let sheet=workerSchedule(worker);
   if(!sheet){
-    sheet={worker,week:selectedWeek(),rate:defaultRate(worker),shifts:{}};
+    sheet={worker,week:staffDate(),rate:defaultRate(worker),shifts:{}};
     S.timesheets.push(sheet);
   }
   return sheet;
@@ -676,32 +798,41 @@ function renderSchedule(){
     +'<button type="button" class="outline" id="schedule-add-worker">+ '+L('Add worker')+'</button>';
   $('schedule-editor').hidden=!scheduleWorker;
   if(!scheduleWorker)return;
+  $('schedule-week').value=staffDate();
   const sheet=workerSchedule(scheduleWorker);
   const name=document.createElement('bdi');
   name.textContent=scheduleWorker;
-  $('timesheet-worker').replaceChildren(name,' · '+weekLabel(selectedWeek()));
+  $('timesheet-worker').replaceChildren(name,' · '+weekLabel(staffDate()));
   $('hourly-rate').value=sheet?.rate??defaultRate(scheduleWorker);
-  $('timesheet-days').innerHTML=dates().map((date,index)=>{
+  renderScheduleRows();
+}
+function renderScheduleRows(){
+  const sheet=workerSchedule(scheduleWorker);
+  const hasRate=(sheet?.rate??defaultRate(scheduleWorker))!=='';
+  $('schedule-rate-hint').hidden=hasRate;
+  $('schedule-grid').hidden=!hasRate;
+  $('timesheet-days').innerHTML=dates(staffDate()).map((date,index)=>{
     const shift=sheet?.shifts[date]||{};
-    const off=shift.off===true;
-    return `<fieldset class="work-shift" data-shift-day="${index}">
-      <legend>${dn(date)} · ${sd(date)}</legend>
-      <label class="shift-off"><input type="checkbox" data-shift-field="off"${off?' checked':''}> ${L('Day off')}</label>
-      <div class="shift-times">
-        <label>${L('Start')}<input type="time" data-shift-field="start" value="${esc(shift.start||'')}"${off?' disabled':''}></label>
-        <label>${L('End')}<input type="time" data-shift-field="end" value="${esc(shift.end||'')}"${off?' disabled':''}></label>
-        <output data-shift-total dir="ltr"></output>
+    const timeInput=field=>`<input type="time" class="shift-time" data-shift-field="${field}"
+      aria-label="${L(field==='start'?'Start':'End')} · ${dn(date)}" dir="ltr" lang="en-US"
+      value="${esc(shift[field]||'')}"${shift.off?' disabled':''}>`;
+    return `<div class="work-shift" data-shift-day="${index}">
+      <div class="shift-date"><strong>${dn(date)}</strong><small>${sd(date)}</small>
+        <label class="shift-off"><input type="checkbox" data-shift-field="off"${shift.off?' checked':''}> ${L('Day off')}</label>
+      </div>
+      ${timeInput('start')}${timeInput('end')}
+      <div class="shift-result"><output data-shift-total dir="ltr"></output><small data-shift-pay dir="ltr"></small>
         <small data-manual-hours${Number.isInteger(shift.minutes)?'':' hidden'}>${L('Manual hours')}</small>
       </div>
-    </fieldset>`;
+    </div>`;
   }).join('');
   updateScheduleTotals();
 }
 function updateScheduleTotals(){
   const {days,minutes,cents}=scheduleTotals(scheduleWorker);
-  $('timesheet-days').querySelectorAll('[data-shift-total]').forEach((output,index)=>{
-    const day=days[index];
-    output.textContent=hoursLabel(day.minutes)+' · '+money(day.cents/100);
+  $('timesheet-days').querySelectorAll('[data-shift-day]').forEach((row,index)=>{
+    row.querySelector('[data-shift-total]').textContent=hoursLabel(days[index].minutes);
+    row.querySelector('[data-shift-pay]').textContent=money(days[index].cents/100);
   });
   $('timesheet-total').textContent=hoursLabel(minutes)+' · '+money(cents/100);
 }
@@ -755,7 +886,8 @@ $('workforce-list').addEventListener('click',event=>{
   if(button.dataset.employeePanel){
     employeePanel=button.dataset.employeePanel;
     renderWorkers();
-    $('workforce-list').querySelector('[data-employee-panel][aria-pressed="true"]')?.focus();
+    if(employeePanel==='rename')$('rename-worker').focus();
+    else $('workforce-list').querySelector('[data-employee-panel][aria-pressed="true"]')?.focus();
   }else if(button.dataset.removeWorker!==undefined){
     const index=Number(button.dataset.removeWorker);
     const worker=S.workers[index];
@@ -766,10 +898,6 @@ $('workforce-list').addEventListener('click',event=>{
     employeePanel='pay';
     save();
     renderWorkers();
-  }else if(button.hasAttribute('data-use-suggestion')){
-    const form=button.form;
-    form.elements.amount.value=(scheduleTotals(selectedEmployee).cents/100).toFixed(2);
-    form.elements.amount.focus();
   }
 });
 $('workforce-list').addEventListener('change',event=>{
@@ -787,7 +915,7 @@ $('workforce-list').addEventListener('submit',event=>{
   if(form.id==='manual-hours-form'){
     const date=form.elements.date.value;
     const minutes=Number(form.elements.hours.value)*60+Number(form.elements.minutes.value);
-    if(!dates().includes(date)||!Number.isInteger(minutes)||minutes<0||minutes>=1440)return;
+    if(!dates(staffDate()).includes(date)||!Number.isInteger(minutes)||minutes<0||minutes>=1440)return;
     editableSchedule(selectedEmployee).shifts[date]={minutes};
     save();
     renderWorkers();
@@ -821,47 +949,63 @@ $('workforce-list').addEventListener('submit',event=>{
   const worker=S.workers[Number(form.dataset.workerPay)];
   const amount=wageValue(form.elements.amount.value);
   if(!worker||Number(amount)<=0)return;
-  const entry=payrollEntry(worker);
-  if(entry){
-    entry.a=amount;
+  const date=form.elements.date.value;
+  if(!validDate(date))return;
+  const payment=payrollEntry(worker);
+  if(payment){
+    payment.entry.a=amount;
+    if(payment.date!==date){
+      const previous=S.days[payment.date].exp;
+      previous.splice(previous.indexOf(payment.entry),1);
+      day(date).exp.push(payment.entry);
+    }
   }else{
-    const days=dates();
-    const hasManualSalary=days.some(date=>S.days[date]?.exp.some(expense=>
-      expense.c===SALARIES&&expense.worker===worker&&!expense.payrollWeek));
+    const hasManualSalary=[...new Set([...dates(staffDate()),date])].some(date=>
+      S.days[date]?.exp.some(expense=>expense.c===SALARIES&&expense.worker===worker&&!expense.payrollWeek));
     if(hasManualSalary&&!confirm(L('This worker already has a manual salary expense this week. Record another salary?')))return;
-    const week=selectedWeek();
-    day(days[6]).exp.push({a:amount,c:SALARIES,n:'',t:'cash',worker,payrollWeek:week});
+    day(date).exp.push({a:amount,c:SALARIES,n:'',t:'cash',worker,payrollWeek:staffDate()});
   }
   save();
-  renderWorkers();
-  drawDays();
-  totals();
+  render();
 });
-$('timesheet').addEventListener('change',event=>{
+$('schedule-week').onchange=event=>{
+  const date=event.target.value;
+  if(!validDate(date)){event.target.value=staffDate();return}
+  staffWeek=date;
+  renderSchedule();
+};
+$('hourly-rate').oninput=event=>{
+  const input=event.target;
+  if(!persistLedger||!scheduleWorker||!input.validity.valid)return;
+  editableSchedule(scheduleWorker).rate=wageValue(input.value);
+  save();
+  renderScheduleRows();
+};
+$('timesheet-days').addEventListener('click',event=>{
+  const input=event.target.closest('input[type="time"]');
+  if(input&&!input.disabled&&typeof input.showPicker==='function'){
+    try{input.showPicker()}catch{}
+  }
+});
+$('timesheet-days').addEventListener('change',event=>{
   const input=event.target;
   const field=input.dataset.shiftField;
-  if(!persistLedger||!scheduleWorker||(input.id!=='hourly-rate'&&!field))return;
-  if(!input.validity.valid)return;
+  if(!persistLedger||!scheduleWorker||!field||!input.validity.valid)return;
+  const row=input.closest('[data-shift-day]');
+  const date=dates(staffDate())[Number(row.dataset.shiftDay)];
   const sheet=editableSchedule(scheduleWorker);
-  if(input.id==='hourly-rate'){
-    sheet.rate=wageValue(input.value);
+  const shift=sheet.shifts[date]||={};
+  if(field==='off'){
+    shift.off=input.checked;
+    row.querySelectorAll('input[type="time"]').forEach(time=>{time.disabled=input.checked});
   }else{
-    const row=input.closest('[data-shift-day]');
-    const date=dates()[Number(row.dataset.shiftDay)];
-    const shift=sheet.shifts[date]||={};
-    if(field==='off'){
-      shift.off=input.checked;
-      row.querySelectorAll('input[type=time]').forEach(time=>{time.disabled=input.checked});
-    }else{
-      shift[field]=validTime(input.value)?input.value:'';
-      delete shift.minutes;
-      row.querySelector('[data-manual-hours]').hidden=true;
-    }
-    if(!shift.start&&!shift.end&&!shift.off&&!Number.isInteger(shift.minutes))delete sheet.shifts[date];
+    shift[field]=validTime(input.value)?input.value:'';
+    delete shift.minutes;
+    row.querySelector('[data-manual-hours]').hidden=true;
   }
+  if(!shift.start&&!shift.end&&!shift.off&&!Number.isInteger(shift.minutes))delete sheet.shifts[date];
   save();
   updateScheduleTotals();
-  renderWorkers();
 });
 
 let MI=-1;
