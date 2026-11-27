@@ -28,3 +28,16 @@ with the Firebase CLI. Start the static server in a second terminal and open
 `http://localhost:8000/?emulator=1`. To test owner access, seed a verified
 Auth emulator user with the UID in `firebase-config.js` using the Firebase Admin
 SDK connected to the Auth emulator. Use a test-only email and password.
+
+## Firebase Hosting
+
+Pushes to `main` deploy the static app to
+[restaurant-account-2.web.app](https://restaurant-account-2.web.app). The
+workflow can also be run manually from `main`.
+
+Before the first deployment, confirm the Hosting site `restaurant-account-2`
+exists in `restaurant-3be9c` and set the repository's
+`FIREBASE_SERVICE_ACCOUNT` Actions secret to the JSON key of a service account
+with Firebase Hosting Admin access in that project. Add
+`restaurant-account-2.web.app` to Firebase Authentication's Authorized Domains.
+Deploy the Firestore rules separately using the command above.
