@@ -41,3 +41,25 @@ exists in `restaurant-3be9c` and set the repository's
 with Firebase Hosting Admin access in that project. Add
 `restaurant-account-2.web.app` to Firebase Authentication's Authorized Domains.
 Deploy the Firestore rules separately using the command above.
+
+## Require invitations before Firebase Authentication registration
+
+Upgrade Firebase Authentication to Identity Platform and enable the Blaze plan
+for Cloud Functions deployment. Confirm that the owner can sign in with the
+existing UID in `firebase-config.js` and that the current invitation records in
+`access/{email}` are ready. Give the functions' runtime service account the
+Firestore read permissions needed to look up these records (Cloud Datastore
+Viewer in this project).
+
+From the repository root, deploy both blocking functions:
+
+```sh
+npx --yes firebase-tools@15.37.0 deploy --only functions --project restaurant-3be9c
+```
+
+The Hosting workflow deploys the website. Deploy the blocking functions
+separately with Firebase project credentials. Verify that the existing owner
+can sign in, a pending invitation can be claimed, and a new, uninvited email
+is rejected before it appears in Authentication → Users. Existing Auth records
+are retained. Reinviting a revoked user allows the approved email to sign in
+and claim the new invitation.
