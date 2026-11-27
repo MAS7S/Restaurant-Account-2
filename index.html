@@ -208,7 +208,7 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 .access-ui .shift-time{min-width:0;padding:4px;font-variant-numeric:tabular-nums;cursor:pointer}
 .access-ui .shift-time:disabled{cursor:default}
 @media(min-width:850px){
-  .ledger-settings{grid-template-columns:1fr 1fr 85px;align-items:end}
+  .ledger-settings{grid-template-columns:minmax(0,1fr) 130px;align-items:end}
   #days .dr{display:grid;grid-template-columns:minmax(125px,.8fr) minmax(0,2fr);gap:10px;align-items:center}
   #days .dh{display:grid;gap:3px;margin:0}
 }
@@ -263,7 +263,7 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <section class="access-ui access-bar" id="access-bar" hidden></section>
 <dialog class="access-ui dialog" id="access-dialog"></dialog>
 <div id="accounts-app" hidden>
-<header class="ban"><div class="bn"><button type="button" id="bn" data-action="edit-restaurant">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
+<header class="ban"><div class="bn"><button type="button" id="bn" data-action="edit-restaurant" aria-haspopup="dialog">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
 <div class="ledger-layout">
 <aside class="card access-ui staff-nav" aria-label="Staff">
   <button type="button" class="outline" id="open-employees" aria-haspopup="dialog">
@@ -277,14 +277,6 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 </aside>
 <main>
 <section class="card ledger-settings">
-<form id="restaurant-title-form">
-  <label for="restaurant-title" data-i18n="Restaurant name">Restaurant name</label>
-  <div class="ledger-field-row">
-    <input id="restaurant-title" type="text" maxlength="80" required
-      placeholder="Restaurant name" data-placeholder="Restaurant name">
-    <button type="submit" data-i18n="Save">Save</button>
-  </div>
-</form>
 <form id="week-start-form">
   <label for="wk" data-i18n="Week starts">Week starts</label>
   <div class="ledger-field-row">
@@ -673,7 +665,6 @@ function showSalaryDetails({groups,total}){
 }
 function head(){
   $('bn').textContent=S.name||L('Restaurant Accounts');
-  $('restaurant-title').value=S.name;
   $('bt').textContent=weekLabel(selectedWeek());
 }
 function totals(){
@@ -1314,13 +1305,6 @@ document.addEventListener('click',e=>{
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
 $('md').onclick=e=>{if(e.target===$('md'))closeM()};
-$('restaurant-title-form').onsubmit=event=>{
-  event.preventDefault();
-  const input=$('restaurant-title');
-  const name=input.value.trim();
-  if(name)window.restaurantAccounts.setRestaurantName(name);
-  input.value=S.name;
-};
 $('week-start-form').onsubmit=event=>{
   event.preventDefault();
   changeCurrentWeek($('wk').value);
