@@ -240,10 +240,12 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 .staff-add-toggle{margin:0 0 4px}
 .staff-add-toggle span[aria-hidden]{font-weight:700;margin-inline-end:4px}
 .employee-history .payment-row{position:relative;display:block;overflow:hidden;padding:0;--swipe-offset:80px}
-.access-ui .payment-line{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 3px;background:#fff;border:0;color:inherit;text-align:start;transition:transform .16s ease}
-.payment-line strong{min-width:72px;text-align:end;touch-action:pan-y;user-select:none;white-space:nowrap}
-.payment-row[data-revealed="delete"] .payment-line{transform:translateX(var(--swipe-offset))}
-.payment-row[data-revealed="edit"] .payment-line{transform:translateX(calc(-1 * var(--swipe-offset)))}
+.access-ui .payment-line{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 3px;background:#fff;border:0;color:inherit;text-align:start;touch-action:pan-y;user-select:none;transition:transform .18s ease-out}
+.payment-line strong{min-width:72px;text-align:end;white-space:nowrap}
+.payment-row[data-revealed="delete"]{--resting-offset:var(--swipe-offset)}
+.payment-row[data-revealed="edit"]{--resting-offset:calc(-1 * var(--swipe-offset))}
+.access-ui .payment-line{transform:translateX(var(--swipe-x,var(--resting-offset,0px)))}
+.payment-row[data-dragging] .payment-line{transition:none;cursor:grabbing}
 .access-ui .payment-action{position:absolute;top:0;bottom:0;width:var(--swipe-offset);border:0;color:#fff;font-weight:700;padding:4px}
 .payment-remove{left:0;background:#9e3834}
 .payment-edit{right:0;background:#0b6145}
@@ -818,7 +820,7 @@ function salaryHistory(worker){
     <button type="button" class="payment-action payment-edit" data-payment-action="edit" hidden>${L('Edit')}</button>
     <button type="button" class="payment-line" data-open-payment aria-haspopup="dialog" aria-keyshortcuts="ArrowRight ArrowLeft">
       <span>${parse(date).toLocaleDateString(locale(),{dateStyle:'medium'})} · ${L(isCr(expense)?'Credit':'Cash')}</span>
-      <strong data-payment-amount><bdi>${esc(money(num(expense.a)))}</bdi></strong>
+      <strong><bdi>${esc(money(num(expense.a)))}</bdi></strong>
     </button></li>`).join('')}</ul>`;
 }
 
@@ -829,14 +831,18 @@ function paymentFromRow(row){
   const expense=S.days[date]?.exp[index];
   return expense?.c===SALARIES&&expense.worker===selectedEmployee?{date,index,expense}:null;
 }
+function setPaymentAction(row,action){
+  if(action)row.dataset.revealed=action;
+  else delete row.dataset.revealed;
+  for(const control of row.querySelectorAll('[data-payment-action]')){
+    control.hidden=control.dataset.paymentAction!==action;
+  }
+}
 function revealPaymentAction(row,action){
   for(const item of $('workforce-list').querySelectorAll('.payment-row[data-revealed]')){
-    delete item.dataset.revealed;
-    for(const control of item.querySelectorAll('[data-payment-action]'))control.hidden=true;
+    if(item!==row)setPaymentAction(item,null);
   }
-  if(!action)return;
-  row.dataset.revealed=action;
-  row.querySelector('[data-payment-action="'+action+'"]').hidden=false;
+  setPaymentAction(row,action);
 }
 function showPaymentDetails({date,expense}){
   const matching=weeks().filter(week=>dates(week).includes(date));
@@ -865,22 +871,49 @@ let historySwipe=null;
 let suppressHistoryClick=false;
 $('workforce-list').addEventListener('pointerdown',event=>{
   suppressHistoryClick=false;
-  const amount=event.target.closest('[data-payment-amount]');
-  if(!amount||!event.isPrimary||event.button!==0)return;
-  historySwipe={id:event.pointerId,x:event.clientX,y:event.clientY,row:amount.closest('.payment-row')};
+  const line=event.target.closest('[data-open-payment]');
+  if(!line||!event.isPrimary||event.button!==0)return;
+  const row=line.closest('.payment-row');
+  const limit=Number.parseFloat(getComputedStyle(row).getPropertyValue('--swipe-offset'));
+  const initial=row.dataset.revealed;
+  const base=initial==='delete'?limit:initial==='edit'?-limit:0;
+  historySwipe={id:event.pointerId,x:event.clientX,y:event.clientY,line,row,initial,limit,base,dragging:false};
 });
-document.addEventListener('pointercancel',event=>{
-  if(historySwipe?.id===event.pointerId)historySwipe=null;
-});
-document.addEventListener('pointerup',event=>{
-  if(historySwipe?.id!==event.pointerId)return;
-  const {x,y,row}=historySwipe;
-  historySwipe=null;
+function updateHistorySwipe(event){
+  const swipe=historySwipe;
+  if(swipe?.id!==event.pointerId)return;
+  const {x,y,row,line,base,limit}=swipe;
+  if(!row.isConnected){historySwipe=null;return}
   const dx=event.clientX-x,dy=event.clientY-y;
-  if(!row.isConnected||Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.4)return;
-  suppressHistoryClick=true;
-  revealPaymentAction(row,dx>0?'delete':'edit');
-});
+  if(!swipe.dragging){
+    if(Math.abs(dy)>8&&Math.abs(dy)>=Math.abs(dx)){historySwipe=null;return}
+    if(Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy)*1.2)return;
+    swipe.dragging=true;
+    if(event.type==='pointermove'&&event.isTrusted)line.setPointerCapture(event.pointerId);
+    row.dataset.dragging='';
+  }
+  swipe.offset=Math.max(-limit,Math.min(limit,base+dx));
+  row.style.setProperty('--swipe-x',swipe.offset+'px');
+  const action=swipe.offset>0?'delete':swipe.offset<0?'edit':null;
+  if(row.dataset.revealed!==action)revealPaymentAction(row,action);
+}
+document.addEventListener('pointermove',updateHistorySwipe);
+function finishHistorySwipe(event){
+  if(historySwipe?.id!==event.pointerId)return;
+  const cancelled=event.type==='pointercancel';
+  if(!cancelled)updateHistorySwipe(event);
+  const swipe=historySwipe;
+  historySwipe=null;
+  if(!swipe?.dragging)return;
+  const {row,initial,offset}=swipe;
+  suppressHistoryClick=!cancelled;
+  const action=cancelled?initial:Math.abs(offset)<32?null:offset>0?'delete':'edit';
+  delete row.dataset.dragging;
+  row.style.removeProperty('--swipe-x');
+  revealPaymentAction(row,action);
+}
+document.addEventListener('pointercancel',finishHistorySwipe);
+document.addEventListener('pointerup',finishHistorySwipe);
 $('workforce-list').addEventListener('keydown',event=>{
   const trigger=event.target.closest('[data-open-payment]');
   if(!trigger||!['ArrowLeft','ArrowRight'].includes(event.key))return;
