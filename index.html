@@ -60,8 +60,13 @@ h3{margin:0 0 8px;font-size:15px}
 .pvh{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;font-size:13px;position:sticky;top:0;background:var(--bg)}
 .pvh button{flex:none;border:0;border-radius:10px;background:#2f6fdb;color:#fff;font:bold 14px Arial;padding:10px 14px}
 </style>
+<link rel="stylesheet" href="./access.css">
 </head>
 <body>
+<section class="access-ui sign-in" id="sign-in"></section>
+<section class="access-ui access-bar" id="access-bar" hidden></section>
+<dialog class="access-ui dialog" id="access-dialog"></dialog>
+<div id="accounts-app" hidden>
 <header class="ban"><div class="bn" id="bn">Restaurant Accounts</div><div class="bt" id="bt"></div></header>
 <main>
 <section class="card">
@@ -74,7 +79,8 @@ h3{margin:0 0 8px;font-size:15px}
 <div class="btns"><button class="b" id="sh" type="button">Share PDF</button><button class="b" id="pdf" type="button" style="background:#0f8b8d">Save PDF</button><button class="b s" id="nx" type="button">Next week</button></div>
 </main>
 <div class="md" id="md" hidden><div class="sheet"><div class="mh"><h3 id="mt"></h3><button id="mx" type="button">Done</button></div><div id="ml"></div><button class="add" id="ma" type="button">+ Add expense</button><div class="mc"><div>CASH EXPENSES<b id="mc"></b></div><div>CREDIT EXPENSES<b id="mk"></b></div></div></div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</div>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -89,10 +95,53 @@ const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
 const fmt=n=>(Math.round(n*100)/100).toLocaleString('en-US');
 const CATS=['Food & supplies','Salaries','Rent','Utilities','Maintenance','Cleaning & packaging','Other'];
 function monday(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)}
-let S;try{S=JSON.parse(localStorage.getItem('rest_acc'))}catch(e){S=null}
-if(!S||typeof S!=='object'||!parse(S.week)||typeof S.days!=='object'||!S.days)S={name:'',cur:'$',week:monday(),days:{}};
-S.name=String(S.name||'');S.cur=String(S.cur||'$');
-const save=()=>{try{localStorage.setItem('rest_acc',JSON.stringify(S))}catch(e){}};
+const emptyLedger=()=>({name:'',cur:'$',week:monday(),days:{}});
+let S=emptyLedger();
+let persistLedger=null;
+const save=()=>persistLedger?.(JSON.stringify(S));
+
+window.restaurantAccounts={
+  open(serialized, persist){
+    if(MI>=0){MI=-1;$('md').hidden=true;$('ml').replaceChildren()}
+    let data;
+    try { data=JSON.parse(serialized); } catch {}
+    S=emptyLedger();
+    if(data && typeof data==='object'){
+      S.name=typeof data.name==='string'?data.name:'';
+      S.cur=typeof data.cur==='string'?data.cur:'$';
+      if(typeof data.week==='string' && /^\d{4}-\d{2}-\d{2}$/.test(data.week)) S.week=data.week;
+      if(data.days && typeof data.days==='object'){
+        for(const [date, record] of Object.entries(data.days)){
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !record || typeof record!=='object') continue;
+          if(Array.isArray(record.inc)) record.inc=record.inc.filter(e=>e && typeof e.a==='string');
+          norm(record);
+          S.days[date]={
+            cash: typeof record.cash==='string'?record.cash:'',
+            credit: typeof record.credit==='string'?record.credit:'',
+            exp: Array.isArray(record.exp)?record.exp.filter(e=>e && typeof e==='object').map(e=>({
+              a:typeof e.a==='string'?e.a:'',
+              c:CATS.includes(e.c)?e.c:CATS[0],
+              n:typeof e.n==='string'?e.n:'',
+              t:e.t==='credit'?'credit':'cash'
+            })):[]
+          };
+        }
+      }
+    }
+    persistLedger=persist;
+    render();
+  },
+  save,
+  close(){
+    persistLedger=null;
+    MI=-1;
+    $('md').hidden=true;
+    $('ml').replaceChildren();
+    $('pv')?.remove();
+    S=emptyLedger();
+    render();
+  }
+};
 const dates=()=>Array.from({length:7},(_,i)=>addD(S.week,i));
 const sum=a=>a.reduce((t,e)=>t+num(e.a),0);
 const isCr=e=>!!e&&e.t==='credit';
@@ -105,7 +154,7 @@ const day=d=>norm(S.days[d]||(S.days[d]={}));
 const tot=d=>{const o=S.days[d];if(!o)return{i:0,e:0,ci:0,cr:0,ec:0,ek:0};norm(o);const ci=num(o.cash),cr=num(o.credit),ek=sum(o.exp.filter(isCr)),e=sum(o.exp);return{i:ci+cr,e:e,ci:ci,cr:cr,ec:e-ek,ek:ek}};
 const money=n=>fmt(n)+' '+S.cur;
 const cards=t=>{
-  const b=(c,l,v,a,z)=>'<section class="sc '+c+'"><div class="l">'+l+'</div><div class="v">'+money(v)+'</div><div class="two"><div><span>'+a[0]+'</span><b>'+money(a[1])+'</b></div><div><span>'+z[0]+'</span><b>'+money(z[1])+'</b></div></div></section>';
+  const b=(c,l,v,a,z)=>'<section class="sc '+c+'"><div class="l">'+l+'</div><div class="v">' +esc(money(v))+'</div><div class="two"><div><span>'+a[0]+'</span><b>'+esc(money(a[1]))+'</b></div><div><span>'+z[0]+'</span><b>'+esc(money(z[1]))+'</b></div></div></section>';
   return b('net','NET PROFIT',t.i-t.e,['CASH NET',t.ci-t.ec],['CREDIT NET',t.cr-t.ek])+b('ex','EXPENSES',t.e,['CASH',t.ec],['CREDIT',t.ek])+b('in','TOTAL INCOME',t.i,['CASH',t.ci],['CREDIT',t.cr]);
 };
 function head(){$('bn').textContent=S.name||'Restaurant Accounts';const d=dates();$('bt').textContent='Week: '+sd(d[0])+' - '+sd(d[6])+' ('+d[0].slice(0,4)+')'}
@@ -116,10 +165,10 @@ function totals(){
 }
 function drawDays(){
   $('days').innerHTML=dates().map((x,i)=>{const o=day(x),t=tot(x);
-    return '<div class="dr"><div class="dh"><div><b>'+dn(x)+'</b><span>'+sd(x)+'</span></div><div class="dt" id="rt'+i+'">'+money(t.i-t.e)+'</div></div>'
+    return '<div class="dr"><div class="dh"><div><b>'+dn(x)+'</b><span>'+sd(x)+'</span></div><div class="dt" id="rt'+i+'">'+esc(money(t.i-t.e))+'</div></div>'
     +'<div class="g3"><div><label class="lc">CREDIT</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="credit" value="'+esc(o.credit)+'"></div>'
     +'<div><label class="lk">CASH</label><input type="number" inputmode="decimal" placeholder="0.00" data-i="'+i+'" data-f="cash" value="'+esc(o.cash)+'"></div>'
-    +'<div><label class="le">EXPENSES</label><button type="button" class="eb" data-e="'+i+'" id="re'+i+'">'+money(t.e)+'</button></div></div></div>'}).join('');
+    +'<div><label class="le">EXPENSES</label><button type="button" class="eb" data-e="'+i+'" id="re'+i+'">'+esc(money(t.e))+'</button></div></div></div>'}).join('');
 }
 function upd(i){
   const t=tot(dates()[i]),a=$('rt'+i),b=$('re'+i);
@@ -144,6 +193,7 @@ function closeM(){
   MI=-1;$('md').hidden=true;
 }
 const onIn=e=>{
+  if(!persistLedger)return;
   const t=e.target;
   if(t.id==='nm'){S.name=t.value;head();save();return}
   if(t.id==='cu'){S.cur=t.value;drawDays();totals();save();return}
@@ -246,5 +296,6 @@ $('sh').onclick=async()=>{
 };
 render();
 </script>
+<script type="module" src="./access.js"></script>
 </body>
 </html>

@@ -1,0 +1,42 @@
+[hidden] { display: none !important; }
+.access-ui, .access-ui * { box-sizing: border-box; }
+.access-ui { font-family: Arial, sans-serif; color: #20382e; }
+.access-ui button { cursor: pointer; font: inherit; }
+.access-ui .outline, .access-ui .primary {
+  background: #fff; border: 1px solid #d9dfda; color: inherit;
+  border-radius: 10px; padding: 12px 15px;
+}
+.access-ui .primary { background: #096144; color: white; font-weight: 700; width: 100%; border-color: #096144; }
+.access-ui button:disabled, .access-ui fieldset:disabled { opacity: .65; cursor: wait; }
+.access-ui :focus-visible { outline: 2px solid #096144; outline-offset: 3px; }
+.sign-in { min-height: 100dvh; background: #f6f2ed; padding: clamp(24px, 10vh, 100px) 16px 30px; }
+.sign-in article { max-width: 460px; margin: auto; border: 1px solid #e3e6df; border-radius: 24px;
+  background: #fffefa; padding: 24px; box-shadow: 0 15px 38px #4f381512; }
+.sign-in h1 { font-size: 2rem; margin: 24px 0; color: #222722; }
+.access-ui .brand, .access-ui .text-button { color: #096144; font-weight: 700; }
+.access-ui .text-button { background: none; border: 0; padding: 0; text-decoration: underline; }
+.access-ui .spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.access-ui label { display: block; color: inherit; font: inherit; margin: 16px 0 6px; }
+.access-ui input { background: #fff; color: #222722; border: 1px solid #d9dfda; border-radius: 10px; padding: 13px; width: 100%; font: inherit; }
+.access-ui fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+.access-ui .stack { display: grid; gap: 10px; margin-top: 16px; }
+.access-bar { background: #fff; padding: 14px max(16px, calc((100% - 640px) / 2)); border-bottom: 1px solid #e3e6df; }
+.access-bar nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 12px; }
+.access-bar .outline { padding: 10px; }
+.access-bar .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #20835a; }
+.access-ui.dialog { background: #fff; border: 1px solid #e3e6df; color: #20382e; border-radius: 22px; width: min(92vw, 470px);
+  max-height: 88dvh; padding: 20px; }
+.access-ui.dialog::backdrop { background: #2b322e80; }
+.access-ui h2 { margin: 0 0 20px; }
+.access-ui h3 { font-size: 1rem; margin: 14px 0 6px; }
+.access-ui p { line-height: 1.5; color: #4b6158; }
+.access-ui .entry { background: #f5f8f6; border: 1px solid #e2e8e3; border-radius: 13px;
+  padding: 12px; margin-block: 8px; overflow-wrap: anywhere; }
+.access-ui .entry button { flex: none; color: #90382f; }
+.access-ui .status { display: inline-block; background: #dceee5; border-radius: 20px; padding: 3px 8px; margin-top: 5px; font-size: .85rem; }
+.access-ui .status.pending { background: #fff0ce; color: #694c19; }
+.access-ui .status.revoked { background: #eee; }
+.access-ui .dialog-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8e3; text-align: end; }
+.access-ui .message { margin: 8px 0 0; }
+.access-ui .message:empty { display: none; }
+.access-ui .message[data-error] { color: #90382f; }
