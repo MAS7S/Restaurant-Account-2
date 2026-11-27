@@ -74,6 +74,9 @@ h3{margin:0 0 8px;font-size:15px}
 .week-select output{text-align:center;font-weight:700}
 .ledger-tools #nx{width:100%}
 [dir="rtl"] .dh span{margin-inline-start:6px;margin-left:0}
+.week-start-row{display:flex;align-items:stretch;gap:8px}
+.week-start-row input{flex:1;min-width:0}
+.week-start-row button{border:0;border-radius:12px;padding:8px 14px;background:#0b6145;color:white;font:inherit;font-weight:700;cursor:pointer}
 </style>
 <link rel="stylesheet" href="./access.css">
 </head>
@@ -85,7 +88,13 @@ h3{margin:0 0 8px;font-size:15px}
 <header class="ban"><div class="bn"><button type="button" id="bn" data-action="edit-restaurant">Restaurant Accounts</button></div><div class="bt" id="bt"></div></header>
 <main>
 <section class="card">
-<label for="wk" data-i18n="Week starts">Week starts</label><input id="wk" type="date">
+<form id="week-start-form">
+  <label for="wk" data-i18n="Week starts">Week starts</label>
+  <div class="week-start-row">
+    <input id="wk" type="date" required>
+    <button type="submit" data-i18n="Start week">Start week</button>
+  </div>
+</form>
 <label for="cu" data-i18n="Currency">Currency</label><input id="cu" placeholder="$">
 </section>
 <div id="days"></div>
@@ -126,7 +135,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parse=s=>{const p=String(s||'').split('-').map(Number);return p.length===3&&p[0]?new Date(p[0],p[1]-1,p[2]):null};
 const addD=(s,n)=>{const d=parse(s)||new Date();d.setDate(d.getDate()+n);return iso(d)};
 const translations = {
-  'Restaurant Accounts':'حسابات المطعم', 'Restaurant name':'اسم المطعم', 'Week starts':'بداية الأسبوع',
+  'Restaurant Accounts':'حسابات المطعم', 'Restaurant name':'اسم المطعم', 'Week starts':'بداية الأسبوع', 'Start week':'ابدأ الأسبوع',
   Currency:'العملة', 'Week total':'إجمالي الأسبوع', Done:'تم', '+ Add expense':'إضافة مصروف',
   'CASH EXPENSES':'المصروفات النقدية', 'CREDIT EXPENSES':'المصروفات الآجلة',
   Weeks:'الأسابيع', 'Saved weeks':'الأسابيع المحفوظة', Older:'الأقدم', Newer:'الأحدث',
@@ -147,7 +156,8 @@ const translations = {
   'Cash net':'صافي النقدي', 'Credit net':'صافي الآجل', 'Daily details':'التفاصيل اليومية',
   Expense:'مصروف', 'Could not create file':'تعذّر إنشاء الملف', Saved:'تم الحفظ', Close:'إغلاق',
   'Press and hold an image, then choose Share or Save':'اضغط مطولًا على الصورة، ثم اختر مشاركة أو حفظ',
-  Report:'التقرير'
+  Report:'التقرير', 'Weekly summary':'ملخص الأسبوع', 'Expense details':'تفاصيل المصروفات',
+  Category:'الفئة', 'Payment method':'طريقة الدفع', Notes:'الملاحظات', Page:'صفحة'
 };
 const ar=()=>document.documentElement.lang==='ar';
 const L=text=>ar()?(translations[text]||text):text;
@@ -245,7 +255,8 @@ function showWeek(week){
   render();
 }
 function changeCurrentWeek(week){
-  if(!persistLedger||!validDate(week)||week===S.week)return;
+  if(!persistLedger||!validDate(week))return;
+  if(week===S.week){showWeek(week);return}
   S.savedWeeks=[...new Set([...weeks(),S.week])].filter(start=>start!==week);
   S.week=week;
   showWeek(week);
@@ -300,7 +311,6 @@ function render(){
   $('older').disabled=position<=0;
   $('newer').disabled=position===all.length-1;
   $('nx').disabled=current!==S.week;
-  $('wk').disabled=current!==S.week;
   $('week-range').textContent=weekLabel(current);
   head();
   $('wk').value=current;
@@ -334,7 +344,6 @@ const onIn=e=>{
   if(!persistLedger)return;
   const t=e.target;
   if(t.id==='cu'){S.cur=t.value;drawDays();totals();save();return}
-  if(t.id==='wk'){changeCurrentWeek(t.value);return}
   if(t.dataset.j!=null&&MI>=0){const o=day(dates()[MI]);if(o.exp[+t.dataset.j]){o.exp[+t.dataset.j][t.dataset.f]=t.value;save();upd(MI);mtot()}return}
   if(t.dataset.i!=null&&t.dataset.f){day(dates()[+t.dataset.i])[t.dataset.f]=t.value;save();upd(+t.dataset.i)}
 };
@@ -348,6 +357,10 @@ document.addEventListener('click',e=>{
 $('ma').onclick=()=>{if(MI<0)return;day(dates()[MI]).exp.push({c:CATS[0],a:'',t:'cash',n:''});save();drawM();upd(MI)};
 $('mx').onclick=closeM;
 $('md').onclick=e=>{if(e.target===$('md'))closeM()};
+$('week-start-form').onsubmit=event=>{
+  event.preventDefault();
+  changeCurrentWeek($('wk').value);
+};
 $('nx').onclick=()=>changeCurrentWeek(addD(S.week,7));
 $('older').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())-1])};
 $('newer').onclick=()=>{const all=weeks();showWeek(all[all.indexOf(selectedWeek())+1])};
@@ -407,45 +420,145 @@ $('clear-week').onclick=()=>{
 };
 
 function canvases(){
-  const pages=[];let c,x,y;
-  const np=()=>{c=document.createElement('canvas');c.width=1240;c.height=1754;x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,1240,1754);pages.push(c);y=80};
-  const T=(t,px,py,o)=>{o=o||{};x.direction=ar()?'rtl':'ltr';x.font=(o.b?'bold ':'')+(o.s||28)+'px Arial,Helvetica,sans-serif';x.fillStyle=o.c||'#1c2b33';x.textAlign=o.a||'left';x.fillText(t,px,py)};
-  const R=(py,h,col)=>{x.fillStyle=col;x.fillRect(70,py,1100,h)};
-  const row=(a,b,cc,d,o)=>{T(a,90,y,o);T(b,660,y,Object.assign({a:'center'},o));T(cc,850,y,Object.assign({a:'center'},o));T(d,1050,y,Object.assign({a:'center'},o))};
-  np();x.fillStyle='#0f8b8d';x.fillRect(0,0,1240,190);
-  const d=dates();
-  T(S.name||L('Restaurant Accounts'),70,85,{s:48,b:1,c:'#fff'});
-  T(L('Weekly report')+' · '+weekLabel(selectedWeek()),70,145,{s:30,c:'#fff'});
-  y=270;R(y-45,62,'#d7efee');row(L('Day'),L('Income'),L('Expenses'),L('Net'),{b:1,c:'#094f51'});
-  let wi=0,we=0,wci=0,wcr=0,wec=0,wek=0;
-  d.forEach(z=>{y+=70;const q=tot(z);wi+=q.i;we+=q.e;wci+=q.ci;wcr+=q.cr;wec+=q.ec;wek+=q.ek;row(dn(z)+' '+sd(z),fmt(q.i),fmt(q.e),fmt(q.i-q.e),{c:'#1c2b33'});x.fillStyle='#cfd9df';x.fillRect(70,y+20,1100,2)});
-  y+=80;R(y-45,62,'#0f8b8d');row(L('Total'),fmt(wi),fmt(we),fmt(wi-we),{b:1,c:'#fff'});
-  const mm=v=>fmt(v)+' '+S.cur;
-  const blk=(title,v0,l1,v1,l2,v2,bg,col,sub)=>{
-    y+=20;const tp=y;x.fillStyle=bg;x.fillRect(70,tp,1100,140);
-    T(L(title),100,tp+46,{b:1,c:col,s:30});T(mm(v0),1140,tp+46,{a:'right',b:1,c:col,s:36});
-    x.fillStyle=sub;x.fillRect(95,tp+68,525,58);x.fillRect(630,tp+68,515,58);
-    T(L(l1),115,tp+107,{b:1,c:col,s:25});T(mm(v1),600,tp+107,{a:'right',b:1,c:col,s:29});
-    T(L(l2),650,tp+107,{b:1,c:col,s:25});T(mm(v2),1125,tp+107,{a:'right',b:1,c:col,s:29});
-    y=tp+140;
-  };
-  y+=30;
-  blk('TOTAL INCOME',wi,'Cash',wci,'Credit',wcr,'#e3ecfb','#1f4fb2','#cddbf6');
-  blk('NET PROFIT',wi-we,'Cash net',wci-wec,'Credit net',wcr-wek,'#e6f4ea','#1e7a33','#cde7d4');
-  blk('EXPENSES',we,'Cash',wec,'Credit',wek,'#fbe6e8','#b02a3a','#f4ccd1');
-  T(L('Currency')+' · '+S.cur,90,y+70,{s:24,c:'#5f7f8f'});
-  y+=150;T(L('Daily details'),70,y,{s:36,b:1,c:'#094f51'});y+=30;
-  d.forEach(z=>{
-    const o=S.days[z];if(!o)return;norm(o);
-    const items=[];
-    if(num(o.cash))items.push([L('Income')+' - '+L('Cash'),num(o.cash),'#2f9e44']);
-    if(num(o.credit))items.push([L('Income')+' - '+L('Credit'),num(o.credit),'#2f9e44']);
-    o.exp.forEach(e=>{if(num(e.a)||e.n)items.push([L('Expense')+' - '+L(e.c)+' - '+L(e.t==='credit'?'Credit':'Cash')+(e.n?': '+String(e.n).slice(0,40):''),num(e.a),'#d6336c'])});
-    if(!items.length)return;
-    if(y>1500)np();
-    y+=65;R(y-42,58,'#d7efee');T(dn(z)+' '+sd(z),90,y,{b:1,c:'#094f51'});
-    items.forEach(m=>{if(y>1680)np();y+=52;T(m[0],100,y,{s:25});T(fmt(m[1]),1150,y,{a:'right',s:25,b:1,c:m[2]})});
-    y+=25;
+  const pages=[];
+  const width=1240, height=1754, margin=72, content=width-2*margin;
+  const rtl=ar();
+  const color={ink:'#172c25', muted:'#50665b', green:'#0b6145', pale:'#edf5f0',
+    border:'#dce8e0', stripe:'#f7faf8', white:'#ffffff', loss:'#a03535'};
+  const period=weekLabel(selectedWeek());
+  const title=S.name||L('Restaurant Accounts');
+  const amount=value=>Number.isFinite(value)?value.toLocaleString(locale(),{
+    minimumFractionDigits:2, maximumFractionDigits:2
+  }):String(value);
+  const rows=dates().map(date=>({date,...tot(date)}));
+  const summary={i:0,e:0,ci:0,cr:0,ec:0,ek:0};
+  for(const row of rows)for(const key in summary)summary[key]+=row[key];
+
+  let ctx;
+  function rect(x,y,w,h,fill){
+    ctx.fillStyle=fill;
+    ctx.fillRect(rtl?width-x-w:x,y,w,h);
+  }
+  function text(value,x,y,{size=26,bold=false,fill=color.ink,align='start',max=content}={}){
+    ctx.font=(bold?'bold ':'')+size+'px Arial, sans-serif';
+    ctx.fillStyle=fill;
+    ctx.direction=rtl?'rtl':'ltr';
+    ctx.textAlign=align;
+    ctx.fillText(value,rtl?width-x:x,y,max);
+  }
+  function newPage(section){
+    const canvas=document.createElement('canvas');
+    canvas.width=width;
+    canvas.height=height;
+    pages.push(canvas);
+    ctx=canvas.getContext('2d');
+    rect(0,0,width,height,color.white);
+    rect(0,0,width,228,color.green);
+    text(L('Weekly report'),margin,61,{size:25,bold:true,fill:'#d4ede0'});
+    text(title,margin,132,{size:53,bold:true,fill:color.white});
+    text(period,margin,183,{size:30,fill:color.white});
+    text(L(section),margin,311,{size:42,bold:true});
+    rect(margin,339,content,2,color.border);
+    rect(margin,1657,content,2,color.border);
+    text(L('Restaurant Accounts'),margin,1706,{size:23,fill:color.muted,max:content*.6});
+    text(L('Page')+' '+pages.length.toLocaleString(locale()),width-margin,1706,
+      {align:'end',size:23,fill:color.muted});
+  }
+
+  newPage('Weekly summary');
+  const cards=[
+    ['TOTAL INCOME',summary.i,'Cash',summary.ci,'Credit',summary.cr],
+    ['EXPENSES',summary.e,'Cash',summary.ec,'Credit',summary.ek],
+    ['NET PROFIT',summary.i-summary.e,'Cash net',summary.ci-summary.ec,'Credit net',summary.cr-summary.ek]
+  ];
+  const gap=16, cardWidth=(content-2*gap)/3;
+  cards.forEach(([label,value,first,firstValue,second,secondValue],i)=>{
+    const x=margin+i*(cardWidth+gap);
+    const emphasis=i===2;
+    rect(x,375,cardWidth,207,emphasis?color.green:color.pale);
+    const fill=emphasis?color.white:color.ink;
+    const max=cardWidth-40;
+    text(L(label),x+20,416,{size:24,bold:true,fill,max});
+    text(amount(value),x+20,476,{size:47,bold:true,fill,max});
+    text(L(first)+' · '+amount(firstValue),x+20,523,{size:21,fill,max});
+    text(L(second)+' · '+amount(secondValue),x+20,554,{size:21,fill,max});
+  });
+
+  text(L('Daily details'),margin,662,{size:37,bold:true});
+  text(L('Currency')+' · '+S.cur,width-margin,662,
+    {size:23,align:'end',fill:color.muted,max:content/2});
+  const columns=[margin+22,margin+466,margin+655,margin+847,width-margin-22];
+  function dailyRow(values,y,options={}){
+    values.forEach((value,index)=>text(value,columns[index],y,{
+      align:index===0?'start':'end',
+      max:index===0?255:161,
+      fill:index===4&&options.loss?color.loss:options.fill,
+      bold:options.bold
+    }));
+  }
+  rect(margin,699,content,66,color.green);
+  dailyRow(['Day','Cash','Credit','Expenses','Net'].map(L),742,{fill:color.white,bold:true});
+  rows.forEach((row,i)=>{
+    const y=765+i*82;
+    if(i%2===0)rect(margin,y,content,82,color.stripe);
+    rect(margin,y+81,content,1,color.border);
+    text(dn(row.date),columns[0],y+34,{bold:true,max:255});
+    text(sd(row.date),columns[0],y+62,{size:21,fill:color.muted,max:255});
+    dailyRow(['',amount(row.ci),amount(row.cr),amount(row.e),amount(row.i-row.e)],
+      y+51,{loss:row.i<row.e});
+  });
+  rect(margin,1340,content,74,color.pale);
+  dailyRow([L('Total'),amount(summary.ci),amount(summary.cr),amount(summary.e),
+    amount(summary.i-summary.e)],1387,{bold:true,loss:summary.i<summary.e});
+
+  const expenses=rows.flatMap(row=>(S.days[row.date]?.exp||[])
+    .filter(expense=>num(expense.a)||expense.n)
+    .map(expense=>({date:row.date,...expense})));
+  const detailColumns=[margin+22,margin+170,margin+460,margin+650,width-margin-22];
+  const detailHeaders=['Date','Category','Payment method','Notes','Amount'].map(L);
+  let y;
+  function expensePage(){
+    newPage('Expense details');
+    rect(margin,375,content,67,color.green);
+    detailHeaders.forEach((label,i)=>text(label,detailColumns[i],418,
+      {size:23,bold:true,fill:color.white,align:i===4?'end':'start',max:[130,265,175,262,130][i]}));
+    y=442;
+  }
+  function wrapNote(note){
+    ctx.font='23px Arial, sans-serif';
+    const lines=[];
+    let line='';
+    for(const word of note.trim().split(/\s+/)){
+      const next=line?line+' '+word:word;
+      if(line&&ctx.measureText(next).width>262){lines.push(line);line=word}
+      else line=next;
+    }
+    lines.push(line);
+    return lines;
+  }
+  if(expenses.length)expensePage();
+  expenses.forEach((expense,i)=>{
+    const lines=wrapNote(expense.n);
+    let offset=0;
+    while(offset<lines.length){
+      if(y+65>1615)expensePage();
+      const count=Math.min(lines.length-offset,Math.floor((1615-y-24)/30));
+      const rowHeight=Math.max(65,24+count*30);
+      if(i%2===0)rect(margin,y,content,rowHeight,color.stripe);
+      rect(margin,y+rowHeight-1,content,1,color.border);
+      const lead=y+40;
+      if(offset===0){
+        text(sd(expense.date),detailColumns[0],lead,{size:23,max:132});
+        text(L(expense.c),detailColumns[1],lead,{size:23,max:267});
+        text(L(isCr(expense)?'Credit':'Cash'),detailColumns[2],lead,{size:23,max:155});
+        text(amount(num(expense.a)),detailColumns[4],lead,
+          {size:23,bold:true,align:'end',max:130});
+      }
+      lines.slice(offset,offset+count).forEach((line,j)=>text(line,detailColumns[3],lead+j*30,
+        {size:23,max:262}));
+      offset+=count;
+      y+=rowHeight;
+    }
   });
   return pages;
 }
